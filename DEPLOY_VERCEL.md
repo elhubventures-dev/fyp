@@ -40,11 +40,12 @@ Redeploy after setting it.
 
 When enabled, both tools support cloud-backed **Save & Continue Later** across devices.
 
-## 3c) Email login flow
+## 3c) Email + password login flow
 
-- Open `/` and use the email login box.
-- Click **Send Magic Link** and open the link from your email.
-- After callback, the session token is stored in browser localStorage and used by both tools for cloud save.
+- Open `/` and use the auth box.
+- New user: click **Sign Up** (email + password).
+- Existing user: click **Sign In**.
+- The access token is stored in browser localStorage and used by both tools for cloud save.
 
 ## 4) Test routes
 

@@ -147,8 +147,10 @@
     </p>
     <section class="auth">
       <div class="auth-row">
-        <input id="emailInput" type="email" placeholder="Email login for cloud save (magic link)" value="elhubv@gmail.com" />
-        <button id="sendLinkBtn" onclick="sendMagicLink()">Send Magic Link</button>
+        <input id="emailInput" type="email" placeholder="Email" value="elhubv@gmail.com" />
+        <input id="passwordInput" type="password" placeholder="Password" />
+        <button id="signInBtn" onclick="signInWithPassword()">Sign In</button>
+        <button id="signUpBtn" onclick="signUpWithPassword()">Sign Up</button>
         <button onclick="signOut()">Sign Out</button>
       </div>
       <div class="auth-status" id="authStatus">Checking authentication...</div>
@@ -206,15 +208,16 @@
       setStatus(`Signed in as ${data.user.email}. Cloud save active.`);
     }
 
-    async function sendMagicLink() {
+    async function signInWithPassword() {
       const email = document.getElementById("emailInput").value.trim();
-      if (!email) return setStatus("Enter your email first.");
+      const password = document.getElementById("passwordInput").value;
+      if (!email || !password) return setStatus("Enter email and password.");
       if (!(await loadConfig())) return;
-      const btn = document.getElementById("sendLinkBtn");
+      const btn = document.getElementById("signInBtn");
       btn.disabled = true;
-      btn.textContent = "Sending...";
+      btn.textContent = "Signing in...";
       try {
-        const res = await fetch(`${supabaseUrl}/auth/v1/otp`, {
+        const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
           method: "POST",
           headers: {
             apikey: supabaseAnon,
@@ -222,20 +225,60 @@
           },
           body: JSON.stringify({
             email,
-            create_user: true,
-            email_redirect_to: `${location.origin}/`
+            password
           })
         });
         if (!res.ok) {
           const e = await res.json();
-          throw new Error(e.error_description || e.msg || "Failed to send link");
+          throw new Error(e.error_description || e.msg || "Sign in failed");
         }
-        setStatus(`Magic link sent to ${email}. Open it on this device/browser.`);
+        const data = await res.json();
+        const token = data.access_token || data.session?.access_token || "";
+        if (!token) throw new Error("No access token returned");
+        localStorage.setItem(AUTH_TOKEN_KEY, token);
+        setStatus(`Signed in as ${email}. Cloud save active.`);
       } catch (err) {
         setStatus(`Error: ${err.message}`);
       } finally {
         btn.disabled = false;
-        btn.textContent = "Send Magic Link";
+        btn.textContent = "Sign In";
+      }
+    }
+
+    async function signUpWithPassword() {
+      const email = document.getElementById("emailInput").value.trim();
+      const password = document.getElementById("passwordInput").value;
+      if (!email || !password) return setStatus("Enter email and password.");
+      if (password.length < 6) return setStatus("Use at least 6 characters for password.");
+      if (!(await loadConfig())) return;
+      const btn = document.getElementById("signUpBtn");
+      btn.disabled = true;
+      btn.textContent = "Creating...";
+      try {
+        const res = await fetch(`${supabaseUrl}/auth/v1/signup`, {
+          method: "POST",
+          headers: {
+            apikey: supabaseAnon,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error_description || data.msg || "Sign up failed");
+        }
+        const token = data.access_token || data.session?.access_token || "";
+        if (token) {
+          localStorage.setItem(AUTH_TOKEN_KEY, token);
+          setStatus(`Account created and signed in as ${email}.`);
+        } else {
+          setStatus(`Account created for ${email}. Check email if confirmation is required, then sign in.`);
+        }
+      } catch (err) {
+        setStatus(`Error: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Sign Up";
       }
     }
 
@@ -244,19 +287,7 @@
       setStatus("Signed out.");
     }
 
-    function captureTokenFromHash() {
-      const hash = location.hash.startsWith("#") ? location.hash.slice(1) : "";
-      if (!hash) return;
-      const params = new URLSearchParams(hash);
-      const token = params.get("access_token");
-      if (token) {
-        localStorage.setItem(AUTH_TOKEN_KEY, token);
-        history.replaceState({}, "", location.pathname);
-      }
-    }
-
     (async () => {
-      captureTokenFromHash();
       await loadConfig().catch(() => setStatus("Could not load server config."));
       await whoAmI().catch(() => setStatus("Auth check failed."));
     })();
