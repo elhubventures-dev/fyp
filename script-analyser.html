@@ -653,13 +653,28 @@ async function callClaude({ max_tokens, messages }) {
   return data.content?.map(b => b.text || '').join('') || '';
 }
 
-fetch('/api/health')
-  .then(r => r.json())
-  .then(d => {
-    const el = document.getElementById('apiStatus');
-    cloudEnabled = Boolean(d.hasSupabase);
-    if (!d.hasApiKey) {
-      el.textContent = '// API key missing on server. Set ANTHROPIC_API_KEY (Vercel env or local .env).';
+async function checkApiHealth() {
+  const el = document.getElementById('apiStatus');
+  if (window.location.protocol === 'file:') {
+    el.textContent = '// Open via npm run dev or the live Vercel URL.';
+    el.style.color = 'var(--warn)';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/health', { cache: 'no-store' });
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(`Server returned non-JSON (status ${res.status}).`);
+    }
+    if (!res.ok) throw new Error(`Health check failed (${res.status}).`);
+
+    cloudEnabled = Boolean(data.hasSupabase);
+    if (!data.hasApiKey) {
+      el.textContent = '// API key missing on server. Set ANTHROPIC_API_KEY in Vercel.';
       el.style.color = 'var(--warn)';
     } else {
       el.textContent = cloudEnabled
@@ -667,26 +682,30 @@ fetch('/api/health')
         : '// API connected — ready to analyse and generate';
       el.style.color = 'var(--accent)';
     }
-  })
-  .catch(() => {
-    document.getElementById('apiStatus').textContent = '// API offline. Check deployment/server logs.';
-    document.getElementById('apiStatus').style.color = 'var(--danger)';
-  });
+  } catch (err) {
+    el.textContent = `// ${err.message || 'API offline. Hard refresh and try again.'}`;
+    el.style.color = 'var(--danger)';
+  }
+}
 
-fetch('/api/me', {
-  headers: (() => {
-    const token = localStorage.getItem(AUTH_TOKEN_KEY) || '';
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  })()
-})
-  .then(async (r) => {
-    if (!r.ok) throw new Error('unauthorized');
-    const data = await r.json();
+async function initApp() {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY) || '';
+  try {
+    const res = await fetch('/api/me', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) throw new Error('unauthorized');
+    const data = await res.json();
     if (!data.user?.isAdmin) throw new Error('forbidden');
-  })
-  .catch(() => {
+  } catch {
     window.location.href = '/';
-  });
+    return;
+  }
+
+  await checkApiHealth();
+}
+
+initApp();
 
 const PROMPTS = {
   full: `You are a YouTube script analyst and retention strategist. Analyse the competitor script below and produce a detailed report.
