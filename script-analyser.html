@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Script Analyser — YouTube Retention Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0D0D0D;
+    --surface: #141414;
+    --surface2: #1C1C1C;
+    --border: #2A2A2A;
+    --accent: #C8F060;
+    --accent2: #60D4F0;
+    --warn: #F0A060;
+    --danger: #F06060;
+    --text: #F0EDE6;
+    --text2: #8A8880;
+    --text3: #5A5856;
+    --radius: 10px;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  /* Layout */
+  .app { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+  /* Header */
+  .header { margin-bottom: 3rem; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--accent); border: 1px solid var(--accent); padding: 4px 10px; border-radius: 4px; margin-bottom: 1.25rem; letter-spacing: 0.08em; }
+  .badge-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  h1 { font-size: clamp(28px, 5vw, 44px); font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; }
+  h1 span { color: var(--accent); }
+  .header-sub { font-family: var(--mono); font-size: 13px; color: var(--text2); margin-top: 0.75rem; }
+  .workspace-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 0.85rem; }
+  .mini-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Input area */
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.2s;
+  }
+  .input-card:focus-within { border-color: var(--accent); }
+  .input-label { font-family: var(--mono); font-size: 11px; color: var(--text2); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; }
+  .char-count { color: var(--text3); }
+  textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+    resize: none;
+    min-height: 180px;
+  }
+  textarea::placeholder { color: var(--text3); }
+
+  /* Options row */
+  .options-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .opt-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+  .opt-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .opt-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(200,240,96,0.08); }
+
+  /* Analyse button */
+  .analyse-btn {
+    width: 100%;
+    padding: 1rem;
+    background: var(--accent);
+    color: #0D0D0D;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .analyse-btn:hover { background: #d8ff60; transform: translateY(-1px); }
+  .analyse-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .analyse-btn .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-top-color: #0D0D0D;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .analyse-btn.loading .spinner { display: block; }
+  .analyse-btn.loading .btn-text { opacity: 0.7; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Output */
+  #output { margin-top: 2rem; display: none; }
+  #output.visible { display: block; animation: fadeUp 0.4s ease; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+  /* Score banner */
+  .score-banner {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 1.5rem;
+  }
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.875rem 0.75rem;
+    text-align: center;
+  }
+  .score-card .score-val {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .score-card .score-name {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text2);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .score-high { color: var(--accent); }
+  .score-mid { color: var(--warn); }
+  .score-low { color: var(--danger); }
+
+  /* Sections */
+  .result-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .result-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.875rem 1.25rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .result-section-header:hover { background: var(--surface2); }
+  .section-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    width: 24px;
+    flex-shrink: 0;
+  }
+  .section-name {
+    font-size: 14px;
+    font-weight: 600;
+    flex: 1;
+  }
+  .chevron {
+    color: var(--text3);
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+  .result-section.open .chevron { transform: rotate(180deg); }
+  .result-section-body {
+    display: none;
+    padding: 0 1.25rem 1.25rem;
+    border-top: 1px solid var(--border);
+  }
+  .result-section.open .result-section-body { display: block; }
+
+  .result-content {
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: var(--text);
+    padding-top: 1rem;
+  }
+  .result-content p { margin-bottom: 0.75rem; }
+  .result-content p:last-child { margin-bottom: 0; }
+  .result-content strong { color: var(--accent); font-weight: 600; }
+  .result-content em { color: var(--accent2); font-style: normal; font-family: var(--mono); font-size: 12px; }
+  .result-content ul { padding-left: 1.25rem; margin-bottom: 0.75rem; }
+  .result-content li { margin-bottom: 0.4rem; }
+  .result-content blockquote {
+    border-left: 2px solid var(--accent);
+    padding-left: 1rem;
+    margin: 0.75rem 0;
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-style: italic;
+    line-height: 1.6;
+  }
+
+  /* Streaming cursor */
+  .cursor { display: inline-block; width: 2px; height: 14px; background: var(--accent); animation: blink 0.8s infinite; vertical-align: middle; margin-left: 2px; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* Final verdict */
+  .verdict-box {
+    background: rgba(200,240,96,0.07);
+    border: 1px solid rgba(200,240,96,0.3);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-top: 1.5rem;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    line-height: 1.7;
+  }
+
+  /* Error */
+  .error-box {
+    background: rgba(240,96,96,0.08);
+    border: 1px solid rgba(240,96,96,0.3);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    color: var(--danger);
+    font-family: var(--mono);
+    font-size: 12px;
+    margin-top: 1rem;
+    display: none;
+  }
+
+  /* ── SCRIPT GENERATOR ── */
+  #scriptGenSection {
+    display: none;
+    margin-top: 2.5rem;
+    animation: fadeUp 0.5s ease;
+  }
+  #scriptGenSection.visible { display: block; }
+
+  .gen-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .gen-divider-line { flex: 1; height: 1px; background: var(--border); }
+  .gen-divider-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .gen-card {
+    background: var(--surface);
+    border: 1px solid rgba(200,240,96,0.25);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    margin-bottom: 1rem;
+  }
+  .gen-card-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+    letter-spacing: -0.01em;
+  }
+  .gen-card-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+
+  .gen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.25rem; }
+  @media (max-width: 600px) { .gen-grid { grid-template-columns: 1fr; } }
+
+  .gen-field label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .gen-field input,
+  .gen-field select,
+  .gen-field textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    min-height: unset;
+    resize: none;
+  }
+  .gen-field input:focus,
+  .gen-field select:focus,
+  .gen-field textarea:focus { border-color: var(--accent); }
+  .gen-field select option { background: var(--surface2); }
+  .gen-field-full { grid-column: 1 / -1; }
+
+  .insights-preview {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .insights-preview-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .insights-preview-text {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text2);
+    line-height: 1.7;
+  }
+
+  .generate-btn {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(200,240,96,0.15), rgba(200,240,96,0.05));
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    color: var(--accent);
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .generate-btn:hover { background: var(--accent); color: #0D0D0D; }
+  .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .generate-btn .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(200,240,96,0.3);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .generate-btn.loading .spinner { display: block; }
+  .generate-btn.loading .btn-text { opacity: 0.6; }
+
+  /* Script output area */
+  #scriptOutput { margin-top: 1.5rem; display: none; }
+  #scriptOutput.visible { display: block; animation: fadeUp 0.4s ease; }
+
+  .script-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+  .script-toolbar-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .toolbar-btns { display: flex; gap: 8px; }
+  .tool-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+  }
+  .tool-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .script-body {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 2;
+    color: var(--text);
+    white-space: pre-wrap;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  .script-body::-webkit-scrollbar { width: 4px; }
+  .script-body::-webkit-scrollbar-track { background: var(--surface2); }
+  .script-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Script formatting */
+  .script-body .s-section { color: var(--accent); font-weight: 700; font-size: 11px; letter-spacing: 0.12em; }
+  .script-body .s-hook { color: var(--accent2); }
+  .script-body .s-retention { color: var(--warn); font-size: 11px; }
+  .script-body .s-plant { color: var(--accent); font-weight: 700; }
+  .script-body .s-cta { color: var(--danger); }
+
+  .gen-error {
+    background: rgba(240,96,96,0.08);
+    border: 1px solid rgba(240,96,96,0.3);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    color: var(--danger);
+    font-family: var(--mono);
+    font-size: 12px;
+    margin-top: 1rem;
+    display: none;
+  }
+
+  /* Toast */
+  #copyToast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: var(--accent); color: #0D0D0D;
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    padding: 10px 20px; border-radius: 4px;
+    transform: translateY(60px); opacity: 0;
+    transition: all 0.25s; z-index: 9999;
+  }
+  #copyToast.show { transform: translateY(0); opacity: 1; }
+
+  /* Progress bar */
+  .progress-wrap { height: 2px; background: var(--border); border-radius: 2px; margin-bottom: 1.5rem; overflow: hidden; display: none; }
+  .progress-bar { height: 2px; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.3s; }
+
+  @media (max-width: 600px) {
+    .score-banner { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="badge"><span class="badge-dot"></span> POWERED BY CLAUDE AI</div>
+    <h1>YouTube Script<br><span>Analyser</span></h1>
+    <p class="header-sub">// paste any competitor transcript → get retention intelligence in seconds</p>
+    <p class="header-sub" id="apiStatus" style="margin-top:0.5rem;color:var(--text3);"></p>
+    <div class="workspace-row">
+      <button class="mini-btn" onclick="saveWorkspace()">Save & Continue Later</button>
+      <button class="mini-btn" onclick="restoreWorkspace(true)">Restore Saved Work</button>
+      <button class="mini-btn" onclick="clearWorkspace()">Clear Saved Work</button>
+    </div>
+  </div>
+
+  <div class="input-card">
+    <div class="input-label">
+      <span>PASTE SCRIPT / TRANSCRIPT</span>
+      <span class="char-count" id="charCount">0 chars</span>
+    </div>
+    <textarea id="scriptInput" placeholder="Paste the full YouTube script or auto-generated transcript here...&#10;&#10;Works best with 500+ words. The more complete the script, the deeper the analysis."></textarea>
+  </div>
+
+  <div class="options-row">
+    <div class="opt-btn active" data-mode="full" onclick="setMode(this)">Full 9-section report</div>
+    <div class="opt-btn" data-mode="quick" onclick="setMode(this)">Quick scorecard only</div>
+    <div class="opt-btn" data-mode="hooks" onclick="setMode(this)">Hook rewrite only</div>
+    <div class="opt-btn" data-mode="outperform" onclick="setMode(this)">Outperform plan only</div>
+  </div>
+
+  <button class="analyse-btn" id="analyseBtn" onclick="analyseScript()">
+    <div class="spinner"></div>
+    <span class="btn-text">Analyse Script</span>
+  </button>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div id="output"></div>
+
+  <!-- ══ SCRIPT GENERATOR ══ -->
+  <div id="scriptGenSection">
+    <div class="gen-divider">
+      <div class="gen-divider-line"></div>
+      <div class="gen-divider-label">⚡ Generate Superior Script</div>
+      <div class="gen-divider-line"></div>
+    </div>
+
+    <div class="gen-card">
+      <div class="gen-card-title">Build a Script That Beats It</div>
+      <div class="gen-card-sub">// Pre-loaded with competitor intelligence from the analysis above. Fill in your details and Claude writes the full script.</div>
+
+      <div class="insights-preview" id="insightsPreview">
+        <div class="insights-preview-label">✦ Intelligence extracted from competitor script</div>
+        <div class="insights-preview-text" id="insightsText">Run an analysis above to auto-populate competitor insights here.</div>
+      </div>
+
+      <div class="gen-grid">
+        <div class="gen-field">
+          <label>Your video topic / niche</label>
+          <input type="text" id="genTopic" placeholder="e.g. drought tolerant perennials" />
+        </div>
+        <div class="gen-field">
+          <label>Number of items in list</label>
+          <select id="genCount">
+            <option value="7">7 items</option>
+            <option value="10">10 items</option>
+            <option value="15">15 items</option>
+            <option value="17" selected>17 items</option>
+            <option value="20">20 items</option>
+            <option value="23">23 items</option>
+          </select>
+        </div>
+        <div class="gen-field">
+          <label>Target length</label>
+          <select id="genLength">
+            <option value="5-7 minutes">5–7 minutes</option>
+            <option value="8-10 minutes">8–10 minutes</option>
+            <option value="12-15 minutes" selected>12–15 minutes</option>
+            <option value="40 minutes">40 minutes</option>
+          </select>
+        </div>
+        <div class="gen-field">
+          <label>Output format</label>
+          <select id="genFormat">
+            <option value="standard" selected>Standard (voiceover script)</option>
+            <option value="heygen">HeyGen B-roll only (no avatar)</option>
+          </select>
+        </div>
+        <div class="gen-field">
+          <label>Audience</label>
+          <select id="genAudience">
+            <option value="global gardening beginners" selected>Global / Beginners</option>
+            <option value="US home gardeners">US Home Gardeners</option>
+            <option value="African / Nigerian farmers">African / Nigerian Farmers</option>
+            <option value="small-scale farmers">Small-Scale Farmers</option>
+            <option value="urban gardeners">Urban Gardeners</option>
+          </select>
+        </div>
+        <div class="gen-field gen-field-full">
+          <label>Extra instructions (optional)</label>
+          <textarea id="genExtra" rows="2" placeholder="e.g. Focus on container gardening. Include zone-specific tips. Add a bonus section on soil mix."></textarea>
+        </div>
+      </div>
+
+      <button class="generate-btn" id="generateBtn" onclick="generateScript()">
+        <div class="spinner"></div>
+        <span class="btn-text">Generate Superior Script</span>
+      </button>
+
+      <div class="gen-error" id="genError"></div>
+    </div>
+
+    <div id="scriptOutput">
+      <div class="script-toolbar">
+        <div class="script-toolbar-title">✦ Generated Script</div>
+        <div class="toolbar-btns">
+          <button class="tool-btn" onclick="copyScript()">Copy Full Script</button>
+          <button class="tool-btn" onclick="downloadScript('txt')">Download .txt</button>
+          <button class="tool-btn" onclick="downloadScript('md')">Download .md</button>
+        </div>
+      </div>
+      <div class="script-body" id="scriptBody"></div>
+    </div>
+  </div>
+
+</div>
+<div id="copyToast">Copied to clipboard</div>
+
+<script>
+let currentMode = 'full';
+
+function setMode(el) {
+  document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  currentMode = el.dataset.mode;
+}
+
+document.getElementById('scriptInput').addEventListener('input', function() {
+  document.getElementById('charCount').textContent = this.value.length.toLocaleString() + ' chars';
+});
+
+async function callClaude({ max_tokens, messages }) {
+  const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens,
+      messages
+    })
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'API request failed');
+  }
+  return data.content?.map(b => b.text || '').join('') || '';
+}
+
+fetch('/api/health')
+  .then(r => r.json())
+  .then(d => {
+    const el = document.getElementById('apiStatus');
+    cloudEnabled = Boolean(d.hasSupabase);
+    if (!d.hasApiKey) {
+      el.textContent = '// API key missing on server. Set ANTHROPIC_API_KEY (Vercel env or local .env).';
+      el.style.color = 'var(--warn)';
+    } else {
+      el.textContent = cloudEnabled
+        ? '// API connected + cloud save enabled (Supabase)'
+        : '// API connected — ready to analyse and generate';
+      el.style.color = 'var(--accent)';
+    }
+  })
+  .catch(() => {
+    document.getElementById('apiStatus').textContent = '// API offline. Check deployment/server logs.';
+    document.getElementById('apiStatus').style.color = 'var(--danger)';
+  });
+
+const PROMPTS = {
+  full: `You are a YouTube script analyst and retention strategist. Analyse the competitor script below and produce a detailed report.
+
+Return your analysis in this EXACT JSON structure (no markdown, no backticks, pure JSON):
+{
+  "scores": {
+    "hook": 7.5,
+    "retention": 6.8,
+    "emotional": 7.0,
+    "algorithm": 8.0,
+    "viral": 7.3
+  },
+  "sections": [
+    {
+      "num": "01",
+      "title": "Script Structure Map",
+      "content": "..."
+    },
+    {
+      "num": "02",
+      "title": "Viewer Psychology + Emotional Journey",
+      "content": "..."
+    },
+    {
+      "num": "03",
+      "title": "Voice, Tone & Pacing",
+      "content": "..."
+    },
+    {
+      "num": "04",
+      "title": "Retention Mechanics",
+      "content": "..."
+    },
+    {
+      "num": "05",
+      "title": "Top Strengths",
+      "content": "..."
+    },
+    {
+      "num": "06",
+      "title": "Weak Points + Missed Opportunities",
+      "content": "..."
+    },
+    {
+      "num": "07",
+      "title": "How to Outperform It",
+      "content": "..."
+    },
+    {
+      "num": "08",
+      "title": "Superior Script Framework",
+      "content": "..."
+    },
+    {
+      "num": "09",
+      "title": "Virality Scorecard Breakdown",
+      "content": "..."
+    }
+  ],
+  "verdict": "If optimised, this script could increase performance by approximately X% by implementing Y and Z."
+}
+
+For each section content:
+- Be specific, quote exact lines where relevant
+- Use **bold** for key terms
+- Use > for quoted lines from the script
+- Use bullet points with - for lists
+- Be honest and critical, no generic praise
+- Each section should be 150-300 words
+
+Script to analyse:
+`,
+
+  quick: `Analyse this YouTube script and return ONLY a JSON scorecard (no markdown, pure JSON):
+{
+  "scores": { "hook": 7.5, "retention": 6.8, "emotional": 7.0, "algorithm": 8.0, "viral": 7.3 },
+  "sections": [
+    { "num": "01", "title": "Virality Scorecard + Reasoning", "content": "Detailed explanation of each score with specific evidence from the script." },
+    { "num": "02", "title": "Top 5 Strengths", "content": "The 5 biggest retention/virality strengths with specific line references." },
+    { "num": "03", "title": "Top 5 Weaknesses", "content": "The 5 biggest drop-off risks with specific evidence." }
+  ],
+  "verdict": "One-line summary of overall potential."
+}
+Script: `,
+
+  hooks: `Analyse the hook of this YouTube script and return JSON (no markdown, pure JSON):
+{
+  "scores": { "hook": 7.5, "retention": 6.0, "emotional": 6.5, "algorithm": 7.0, "viral": 6.8 },
+  "sections": [
+    { "num": "01", "title": "Current Hook Analysis", "content": "Break down exactly what the current hook does well and where it fails. Quote the exact hook lines." },
+    { "num": "02", "title": "5 Stronger Hook Rewrites", "content": "Write 5 alternative hooks in different styles: shock/stat, story, controversy, curiosity gap, relatability. Label each style clearly." },
+    { "num": "03", "title": "Hook Placement Strategy", "content": "Where should curiosity loops be seeded in the first 60 seconds? Give exact placement advice." }
+  ],
+  "verdict": "The strongest hook option and why it would outperform the original."
+}
+Script: `,
+
+  outperform: `Analyse this YouTube script and return an outperformance plan as JSON (no markdown, pure JSON):
+{
+  "scores": { "hook": 7.0, "retention": 6.5, "emotional": 6.8, "algorithm": 7.5, "viral": 7.0 },
+  "sections": [
+    { "num": "01", "title": "Structural Changes", "content": "What to reorder, cut, and add. Be specific with timestamps/sections." },
+    { "num": "02", "title": "Retention Loop Upgrades", "content": "Write 5 example re-hook lines with exact placement suggestions (e.g. after plant 6, at the 8-minute mark)." },
+    { "num": "03", "title": "Pattern Interrupts", "content": "3 specific pattern interrupts with exact placement and example wording." },
+    { "num": "04", "title": "Superior Script Framework", "content": "A complete beat-by-beat outline that would outperform the original." }
+  ],
+  "verdict": "If optimised, this script could increase performance by approximately X% by implementing Y and Z."
+}
+Script: `
+};
+
+async function analyseScript() {
+  const script = document.getElementById('scriptInput').value.trim();
+  if (!script || script.length < 100) {
+    showError('Please paste a script with at least 100 characters.');
+    return;
+  }
+
+  const btn = document.getElementById('analyseBtn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.querySelector('.btn-text').textContent = 'Analysing...';
+
+  document.getElementById('errorBox').style.display = 'none';
+  document.getElementById('output').classList.remove('visible');
+  document.getElementById('output').innerHTML = '';
+
+  const progressWrap = document.getElementById('progressWrap');
+  const progressBar = document.getElementById('progressBar');
+  progressWrap.style.display = 'block';
+  let prog = 0;
+  const progInterval = setInterval(() => {
+    prog = Math.min(prog + Math.random() * 8, 85);
+    progressBar.style.width = prog + '%';
+  }, 400);
+
+  try {
+    const prompt = PROMPTS[currentMode] + script;
+    const raw = await callClaude({
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    // Strip any markdown fences
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+
+    clearInterval(progInterval);
+    progressBar.style.width = '100%';
+    setTimeout(() => { progressWrap.style.display = 'none'; progressBar.style.width = '0%'; }, 500);
+
+    renderOutput(parsed);
+    // Populate generator with competitor intelligence
+    if (currentMode === 'full' || currentMode === 'outperform') {
+      populateGeneratorInsights(parsed);
+    } else {
+      document.getElementById('scriptGenSection').classList.add('visible');
+    }
+
+  } catch (err) {
+    clearInterval(progInterval);
+    progressWrap.style.display = 'none';
+    showError('Analysis failed: ' + err.message + '. Please try again.');
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.querySelector('.btn-text').textContent = 'Analyse Script';
+  }
+}
+
+function scoreColor(val) {
+  if (val >= 7.5) return 'score-high';
+  if (val >= 5.5) return 'score-mid';
+  return 'score-low';
+}
+
+function renderOutput(data) {
+  const out = document.getElementById('output');
+  const scores = data.scores || {};
+
+  const scoreNames = { hook: 'Hook', retention: 'Retention', emotional: 'Emotion', algorithm: 'Algorithm', viral: 'Viral' };
+
+  let html = `<div class="score-banner">`;
+  for (const [key, name] of Object.entries(scoreNames)) {
+    const val = scores[key] ?? '?';
+    html += `<div class="score-card">
+      <div class="score-val ${scoreColor(val)}">${val}</div>
+      <div class="score-name">${name}</div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  for (let i = 0; i < (data.sections || []).length; i++) {
+    const s = data.sections[i];
+    html += `<div class="result-section ${i === 0 ? 'open' : ''}">
+      <div class="result-section-header" onclick="toggleSection(this.parentElement)">
+        <span class="section-num">${s.num}</span>
+        <span class="section-name">${s.title}</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="result-section-body">
+        <div class="result-content">${formatContent(s.content)}</div>
+      </div>
+    </div>`;
+  }
+
+  if (data.verdict) {
+    html += `<div class="verdict-box">// ${data.verdict}</div>`;
+  }
+
+  out.innerHTML = html;
+  out.classList.add('visible');
+}
+
+function formatContent(text) {
+  if (!text) return '';
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, match => `<ul>${match}</ul>`)
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<)(.+)$/gm, (m) => m.startsWith('<') ? m : `<p>${m}</p>`)
+    .replace(/<p><\/p>/g, '');
+}
+
+function toggleSection(el) {
+  el.classList.toggle('open');
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = '⚠ ' + msg;
+  box.style.display = 'block';
+}
+
+// ══════════════════════════════════════
+// SCRIPT GENERATOR
+// ══════════════════════════════════════
+
+let competitorInsights = '';
+let generatedScriptText = '';
+const WORKSPACE_KEY = 'scriptAnalyserWorkspaceV1';
+const WORKSPACE_ID_KEY = 'rootwardWorkspaceIdV1';
+const AUTH_TOKEN_KEY = 'rootwardSupabaseTokenV1';
+let cloudEnabled = false;
+
+function getWorkspaceId() {
+  let id = localStorage.getItem(WORKSPACE_ID_KEY);
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : `ws-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    localStorage.setItem(WORKSPACE_ID_KEY, id);
+  }
+  return id;
+}
+
+async function saveCloudWorkspace(payload) {
+  if (!cloudEnabled) return;
+  const token = localStorage.getItem(AUTH_TOKEN_KEY) || '';
+  await fetch(`/api/workspace?workspaceId=${encodeURIComponent(getWorkspaceId())}&tool=script-analyser`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify({ workspaceId: getWorkspaceId(), tool: 'script-analyser', payload })
+  });
+}
+
+async function loadCloudWorkspace() {
+  if (!cloudEnabled) return null;
+  const token = localStorage.getItem(AUTH_TOKEN_KEY) || '';
+  const res = await fetch(`/api/workspace?workspaceId=${encodeURIComponent(getWorkspaceId())}&tool=script-analyser`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Cloud restore failed');
+  return data.state?.payload || null;
+}
+
+// Called after every successful analysis — extracts intelligence for generator
+function populateGeneratorInsights(analysisData) {
+  const section07 = analysisData.sections?.find(s => s.num === '07');
+  const section06 = analysisData.sections?.find(s => s.num === '06');
+  const section08 = analysisData.sections?.find(s => s.num === '08');
+  const verdict = analysisData.verdict || '';
+
+  const weaknesses = section06?.content?.replace(/<[^>]+>/g, '').slice(0, 300) || 'Not available';
+  const howTo = section07?.content?.replace(/<[^>]+>/g, '').slice(0, 300) || 'Not available';
+  const framework = section08?.content?.replace(/<[^>]+>/g, '').slice(0, 300) || 'Not available';
+
+  competitorInsights = `WEAK POINTS TO FIX:
+${weaknesses}
+
+HOW TO OUTPERFORM:
+${howTo}
+
+SUPERIOR FRAMEWORK:
+${framework}
+
+VERDICT:
+${verdict}`;
+
+  const preview = `Weak points identified: ${weaknesses.slice(0,120)}...
+Outperform strategy: ${howTo.slice(0,120)}...
+Framework ready: ${framework.slice(0,80)}...`;
+  document.getElementById('insightsText').textContent = preview;
+  document.getElementById('scriptGenSection').classList.add('visible');
+  document.getElementById('scriptGenSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function generateScript() {
+  const topic = document.getElementById('genTopic').value.trim();
+  const count = document.getElementById('genCount').value;
+  const length = document.getElementById('genLength').value;
+  const audience = document.getElementById('genAudience').value;
+  const extra = document.getElementById('genExtra').value.trim();
+  const format = document.getElementById('genFormat').value;
+
+  if (!topic) {
+    const errEl = document.getElementById('genError');
+    errEl.textContent = '⚠ Enter your video topic first.';
+    errEl.style.display = 'block';
+    return;
+  }
+  document.getElementById('genError').style.display = 'none';
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.querySelector('.btn-text').textContent = 'Writing script...';
+
+  document.getElementById('scriptOutput').style.display = 'none';
+  document.getElementById('scriptBody').textContent = '';
+
+  const insightBlock = competitorInsights
+    ? `
+
+COMPETITOR INTELLIGENCE (use this to make your script superior):
+${competitorInsights}`
+    : '';
+
+  const prompt = `You are an expert YouTube scriptwriter specialising in the gardening/agriculture niche. Write a FULL, complete, ready-to-record YouTube script.
+
+BRIEF:
+- Topic: ${topic}
+- Format: Listicle with ${count} items
+- Target length: ${length}
+- Audience: ${audience}
+- Extra instructions: ${extra || 'None'}
+${insightBlock}
+
+SCRIPT REQUIREMENTS — apply ALL of these:
+1. HOOK (0:00–0:45): Use blame-removal OR shock stat OR story-driven opener. Tease 2 curiosity loops simultaneously (not just one). End hook with "Stay for #[X] — [specific intriguing promise]."
+2. SETUP (0:45–1:00): Comment CTA asking audience to share their context (zone / location / situation). Algorithm-logic subscribe CTA: "YouTube doesn't just slow down showing you this. It stops completely."
+3. LIST ITEMS: Write ALL ${count} items in full. Each item must have: Name → Counter-intuitive tip or mechanism → Specific care detail → Who it's perfect for. VARY the entry template — don't use the same structure for every item.
+4. MID-VIDEO RE-HOOKS: Insert 2 re-hooks at roughly 40% and 70% through the list. Each re-hook opens a NEW curiosity loop ("The one coming at #[X] is the most overlooked on this entire list...").
+5. POST-LIST PIVOT: After the last item, say "This is where most videos end. Ours doesn't." Then give 3 bonus tips/secrets that fix the #1 reason people fail with this topic.
+6. USE-CASE SUMMARY: Group items by problem solved (e.g. "For shady spots: X, Y, Z. For hot dry areas: A, B, C"). This makes viewers save and screenshot.
+7. EMOTIONAL CLOSE: Aspirational, visual, specific. Paint a picture of what success looks like. 3–4 sentences max.
+8. FINAL CTA: Subscribe (algorithm logic) + Comment (2-question prompt) + tease next video.
+
+FORMAT THE SCRIPT with clear section labels like:
+[HOOK]
+[SETUP + SUBSCRIBE CTA]
+[ITEM 1 — Name]
+[MID-VIDEO RE-HOOK #1]
+[ITEM X — Name]
+[POST-LIST PIVOT]
+[BONUS TIPS]
+[USE-CASE SUMMARY]
+[EMOTIONAL CLOSE]
+[FINAL CTA]
+
+Also add [RETENTION NOTE: ...] markers at key moments to remind the voiceover artist of pacing.
+${format === 'heygen' ? `
+
+HEYGEN B-ROLL OUTPUT (required when format is HeyGen):
+After the main script, append a second section titled "--- HEYGEN PASTE FILE ---" with:
+1. PRODUCTION DIRECTIVES block (DO NOT NARRATE): B-roll only, no avatar, no on-camera presenter, voice-over only, 16:9 landscape, stock footage + motion graphics for titles/chapters.
+2. Scene-by-scene breakdown: each scene has VISUAL (stock B-roll direction), ON-SCREEN TEXT (lower-thirds), and VO (spoken lines only — no strategy notes in VO).
+3. STYLE BLOCK at the end (DO NOT NARRATE): no avatar, stock media for real footage, motion graphics for chapter breaks.
+For videos over 15 minutes, split into labeled PARTS (PART 1 OF N, etc.) for separate HeyGen renders.` : ''}
+
+Write the COMPLETE script — every word, every line, fully ready to record. Do not summarise or use placeholders. This will go directly to a voiceover artist.`;
+
+  try {
+    const scriptText = await callClaude({
+      max_tokens: format === 'heygen' ? 16000 : 8000,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    if (!scriptText) throw new Error('Empty response from API');
+
+    generatedScriptText = scriptText;
+    renderGeneratedScript(scriptText, topic, count);
+
+  } catch(err) {
+    const errEl = document.getElementById('genError');
+    errEl.textContent = '⚠ Script generation failed: ' + err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.querySelector('.btn-text').textContent = 'Generate Superior Script';
+  }
+}
+
+function renderGeneratedScript(text, topic, count) {
+  // Colour-code script sections
+  const formatted = text
+    .replace(/\[(HOOK[^\]]*)\]/g, '<span class="s-section">[$1]</span>')
+    .replace(/\[(SETUP[^\]]*)\]/g, '<span class="s-section">[$1]</span>')
+    .replace(/\[(ITEM[^\]]*)\]/g, '<span class="s-plant">[$1]</span>')
+    .replace(/\[(MID-VIDEO[^\]]*)\]/g, '<span class="s-retention">[$1]</span>')
+    .replace(/\[(POST-LIST[^\]]*)\]/g, '<span class="s-retention">[$1]</span>')
+    .replace(/\[(BONUS[^\]]*)\]/g, '<span class="s-retention">[$1]</span>')
+    .replace(/\[(USE-CASE[^\]]*)\]/g, '<span class="s-section">[$1]</span>')
+    .replace(/\[(EMOTIONAL[^\]]*)\]/g, '<span class="s-hook">[$1]</span>')
+    .replace(/\[(FINAL[^\]]*)\]/g, '<span class="s-cta">[$1]</span>')
+    .replace(/\[(RETENTION NOTE[^\]]*)\]/g, '<span class="s-retention">[$1]</span>');
+
+  const scriptBody = document.getElementById('scriptBody');
+  scriptBody.innerHTML = formatted;
+
+  const scriptOutput = document.getElementById('scriptOutput');
+  scriptOutput.style.display = 'block';
+  scriptOutput.classList.add('visible');
+  scriptOutput.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function copyScript() {
+  if (!generatedScriptText) return;
+  navigator.clipboard.writeText(generatedScriptText).then(() => {
+    const toast = document.getElementById('copyToast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  });
+}
+
+function downloadScript(ext) {
+  if (!generatedScriptText) return;
+  const topic = document.getElementById('genTopic').value || 'script';
+  const slug = topic.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  const filename = slug + '-script.' + (ext || 'txt');
+  const mime = ext === 'md' ? 'text/markdown' : 'text/plain';
+  const blob = new Blob([generatedScriptText], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function saveWorkspace(showToast = true) {
+  const payload = {
+    savedAt: Date.now(),
+    currentMode,
+    scriptInput: document.getElementById('scriptInput').value,
+    outputHtml: document.getElementById('output').innerHTML,
+    outputVisible: document.getElementById('output').classList.contains('visible'),
+    insightsText: document.getElementById('insightsText').textContent,
+    competitorInsights,
+    generatedScriptText,
+    scriptBodyHtml: document.getElementById('scriptBody').innerHTML,
+    scriptOutputVisible: document.getElementById('scriptOutput').classList.contains('visible'),
+    scriptGenVisible: document.getElementById('scriptGenSection').classList.contains('visible'),
+    genTopic: document.getElementById('genTopic').value,
+    genCount: document.getElementById('genCount').value,
+    genLength: document.getElementById('genLength').value,
+    genFormat: document.getElementById('genFormat').value,
+    genAudience: document.getElementById('genAudience').value,
+    genExtra: document.getElementById('genExtra').value
+  };
+  localStorage.setItem(WORKSPACE_KEY, JSON.stringify(payload));
+  saveCloudWorkspace(payload).catch(() => {});
+  if (showToast) {
+    const toast = document.getElementById('copyToast');
+    toast.textContent = 'Workspace saved';
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+      toast.textContent = 'Copied to clipboard';
+    }, 1800);
+  }
+}
+
+function applyWorkspaceData(data, showToast = false) {
+  try {
+    currentMode = data.currentMode || 'full';
+    const active = document.querySelector(`.opt-btn[data-mode="${currentMode}"]`);
+    if (active) setMode(active);
+
+    document.getElementById('scriptInput').value = data.scriptInput || '';
+    document.getElementById('charCount').textContent = (data.scriptInput || '').length.toLocaleString() + ' chars';
+
+    document.getElementById('genTopic').value = data.genTopic || '';
+    document.getElementById('genCount').value = data.genCount || '17';
+    document.getElementById('genLength').value = data.genLength || '12-15 minutes';
+    document.getElementById('genFormat').value = data.genFormat || 'standard';
+    document.getElementById('genAudience').value = data.genAudience || 'global gardening beginners';
+    document.getElementById('genExtra').value = data.genExtra || '';
+
+    competitorInsights = data.competitorInsights || '';
+    generatedScriptText = data.generatedScriptText || '';
+    document.getElementById('insightsText').textContent = data.insightsText || 'Run an analysis above to auto-populate competitor insights here.';
+
+    if (data.outputVisible) {
+      document.getElementById('output').innerHTML = data.outputHtml || '';
+      document.getElementById('output').classList.add('visible');
+    }
+    if (data.scriptGenVisible) {
+      document.getElementById('scriptGenSection').classList.add('visible');
+    }
+    if (data.scriptOutputVisible) {
+      document.getElementById('scriptOutput').classList.add('visible');
+      document.getElementById('scriptOutput').style.display = 'block';
+      document.getElementById('scriptBody').innerHTML = data.scriptBodyHtml || '';
+    }
+
+    if (showToast) {
+      const toast = document.getElementById('copyToast');
+      toast.textContent = 'Workspace restored';
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+        toast.textContent = 'Copied to clipboard';
+      }, 1800);
+    }
+  } catch (_) {}
+}
+
+async function restoreWorkspace(showToast = false) {
+  let data = null;
+  try {
+    const cloudData = await loadCloudWorkspace();
+    if (cloudData) data = cloudData;
+  } catch (_) {}
+
+  if (!data) {
+    const raw = localStorage.getItem(WORKSPACE_KEY);
+    if (!raw) return;
+    try { data = JSON.parse(raw); } catch (_) { return; }
+  }
+
+  applyWorkspaceData(data, showToast);
+}
+
+function clearWorkspace() {
+  localStorage.removeItem(WORKSPACE_KEY);
+  const toast = document.getElementById('copyToast');
+  toast.textContent = 'Saved workspace cleared';
+  toast.classList.add('show');
+  setTimeout(() => {
+    toast.classList.remove('show');
+    toast.textContent = 'Copied to clipboard';
+  }, 1800);
+}
+
+// Auto-save while typing/changing options
+['scriptInput','genTopic','genCount','genLength','genFormat','genAudience','genExtra'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', () => saveWorkspace(false));
+  el.addEventListener('change', () => saveWorkspace(false));
+});
+
+// Restore on load + periodic autosave safety net
+restoreWorkspace(false);
+setInterval(() => saveWorkspace(false), 15000);
+</script>
+</body>
+</html>

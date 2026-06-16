@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rootward Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --surface: #151515;
+      --border: #2a2a2a;
+      --text: #f0ede6;
+      --muted: #9a978f;
+      --accent: #c8f060;
+      --accent2: #60d4f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Syne", sans-serif;
+      background: radial-gradient(circle at top right, #161a10 0%, var(--bg) 38%);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 2rem;
+    }
+    .wrap {
+      width: min(980px, 100%);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: clamp(34px, 6vw, 64px);
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.8rem;
+    }
+    h1 span { color: var(--accent); }
+    .sub {
+      color: var(--muted);
+      font-family: "DM Mono", monospace;
+      font-size: 13px;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: linear-gradient(180deg, #191919 0%, var(--surface) 100%);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.3rem 1.2rem;
+      text-decoration: none;
+      color: var(--text);
+      transition: transform .18s ease, border-color .18s ease;
+      display: block;
+    }
+    .card:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .card h2 {
+      font-size: 20px;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+    .card p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 10px;
+      font-family: "DM Mono", monospace;
+    }
+    .arrow {
+      color: var(--accent2);
+      font-family: "DM Mono", monospace;
+      font-size: 12px;
+      letter-spacing: .06em;
+    }
+    .footer {
+      margin-top: 1rem;
+      color: var(--muted);
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
+    }
+    .auth {
+      margin: 0 0 1rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #151515;
+      padding: 0.9rem;
+    }
+    .auth-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .auth input {
+      flex: 1;
+      min-width: 220px;
+      border: 1px solid var(--border);
+      background: #0f0f0f;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-family: "DM Mono", monospace;
+      font-size: 12px;
+    }
+    .auth button {
+      border: 1px solid var(--border);
+      background: #1a1a1a;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 9px 11px;
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .auth button:hover { border-color: var(--accent); color: var(--accent); }
+    .auth-status {
+      margin-top: 0.55rem;
+      color: var(--muted);
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="badge">ROOTWARD TOOLSUITE</div>
+    <h1>Pick Your <span>Creator Tool</span></h1>
+    <p class="sub">
+      One live link, two tools. Analyze competitor scripts, generate better scripts,
+      and build title/thumbnail strategy from one place.
+    </p>
+    <section class="auth">
+      <div class="auth-row">
+        <input id="emailInput" type="email" placeholder="Email login for cloud save (magic link)" value="elhubv@gmail.com" />
+        <button id="sendLinkBtn" onclick="sendMagicLink()">Send Magic Link</button>
+        <button onclick="signOut()">Sign Out</button>
+      </div>
+      <div class="auth-status" id="authStatus">Checking authentication...</div>
+    </section>
+    <section class="grid">
+      <a class="card" href="/script-analyser.html">
+        <h2>Script Analyser</h2>
+        <p>Competitor breakdown, retention intelligence, superior script generation, and HeyGen-ready output.</p>
+        <div class="arrow">OPEN TOOL →</div>
+      </a>
+      <a class="card" href="/title-thumbnail-tool.html">
+        <h2>Title & Thumbnail Lab</h2>
+        <p>Keyword research, CTR title scoring, and thumbnail concepts for your gardening channel.</p>
+        <div class="arrow">OPEN TOOL →</div>
+      </a>
+    </section>
+    <p class="footer">Tip: set ANTHROPIC_API_KEY + SUPABASE_* env vars in Vercel.</p>
+  </main>
+  <script>
+    const AUTH_TOKEN_KEY = "rootwardSupabaseTokenV1";
+    let supabaseUrl = "";
+    let supabaseAnon = "";
+
+    function setStatus(text) {
+      document.getElementById("authStatus").textContent = text;
+    }
+
+    async function loadConfig() {
+      const res = await fetch("/api/public-config");
+      const cfg = await res.json();
+      if (!cfg.hasSupabase) {
+        setStatus("Supabase is not configured on server yet.");
+        return false;
+      }
+      supabaseUrl = cfg.supabaseUrl;
+      supabaseAnon = cfg.supabaseAnonKey;
+      return true;
+    }
+
+    async function whoAmI() {
+      const token = localStorage.getItem(AUTH_TOKEN_KEY) || "";
+      if (!token) {
+        setStatus("Not signed in. Send magic link to enable cross-device save.");
+        return;
+      }
+      const res = await fetch("/api/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        setStatus("Session expired. Send a new magic link.");
+        return;
+      }
+      setStatus(`Signed in as ${data.user.email}. Cloud save active.`);
+    }
+
+    async function sendMagicLink() {
+      const email = document.getElementById("emailInput").value.trim();
+      if (!email) return setStatus("Enter your email first.");
+      if (!(await loadConfig())) return;
+      const btn = document.getElementById("sendLinkBtn");
+      btn.disabled = true;
+      btn.textContent = "Sending...";
+      try {
+        const res = await fetch(`${supabaseUrl}/auth/v1/otp`, {
+          method: "POST",
+          headers: {
+            apikey: supabaseAnon,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            email,
+            create_user: true,
+            email_redirect_to: `${location.origin}/`
+          })
+        });
+        if (!res.ok) {
+          const e = await res.json();
+          throw new Error(e.error_description || e.msg || "Failed to send link");
+        }
+        setStatus(`Magic link sent to ${email}. Open it on this device/browser.`);
+      } catch (err) {
+        setStatus(`Error: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Send Magic Link";
+      }
+    }
+
+    function signOut() {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      setStatus("Signed out.");
+    }
+
+    function captureTokenFromHash() {
+      const hash = location.hash.startsWith("#") ? location.hash.slice(1) : "";
+      if (!hash) return;
+      const params = new URLSearchParams(hash);
+      const token = params.get("access_token");
+      if (token) {
+        localStorage.setItem(AUTH_TOKEN_KEY, token);
+        history.replaceState({}, "", location.pathname);
+      }
+    }
+
+    (async () => {
+      captureTokenFromHash();
+      await loadConfig().catch(() => setStatus("Could not load server config."));
+      await whoAmI().catch(() => setStatus("Auth check failed."));
+    })();
+  </script>
+</body>
+</html>

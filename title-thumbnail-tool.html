@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Title & Thumbnail Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink: #0A0A0A;
+  --paper: #F5F2EB;
+  --paper2: #EDE9DF;
+  --paper3: #E3DED3;
+  --accent: #E8441A;
+  --accent2: #1A7AE8;
+  --gold: #D4A017;
+  --green: #1AAF5D;
+  --border: #C8C3B8;
+  --mono: 'Space Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+  --body: 'DM Sans', sans-serif;
+}
+
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  min-height: 100vh;
+}
+
+/* ── GRAIN OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.6;
+}
+
+.app { max-width: 1000px; margin: 0 auto; padding: 3rem 2rem 6rem; }
+
+/* ── HEADER ── */
+.header { margin-bottom: 3rem; border-bottom: 3px solid var(--ink); padding-bottom: 1.5rem; }
+.header-top { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+.logo { font-family: var(--display); font-size: clamp(48px, 8vw, 80px); line-height: 0.9; letter-spacing: 0.02em; }
+.logo span { color: var(--accent); }
+.header-meta { font-family: var(--mono); font-size: 11px; color: #888; text-align: right; line-height: 1.8; }
+.header-sub { font-family: var(--mono); font-size: 12px; color: #666; margin-top: 0.75rem; letter-spacing: 0.03em; }
+.workspace-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0.75rem; }
+.ws-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1.5px solid var(--border);
+  background: var(--paper2);
+  color: #666;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ws-btn:hover { border-color: var(--ink); color: var(--ink); background: white; }
+
+/* ── TABS ── */
+.tabs { display: flex; gap: 0; margin-bottom: 2rem; border-bottom: 2px solid var(--ink); }
+.tab {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-bottom: none;
+  margin-bottom: -2px;
+  background: transparent;
+  color: #888;
+  transition: all 0.15s;
+}
+.tab:hover { color: var(--ink); background: var(--paper2); }
+.tab.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+/* ── PANELS ── */
+.panel { display: none; animation: fadeIn 0.3s ease; }
+.panel.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── INPUTS ── */
+.field { margin-bottom: 1.5rem; }
+.label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+input[type="text"], textarea, select {
+  width: 100%;
+  background: var(--paper2);
+  border: 2px solid var(--border);
+  border-radius: 0;
+  padding: 12px 14px;
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--ink); background: white; }
+textarea { min-height: 100px; resize: vertical; }
+
+/* ── BUTTON ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 14px 28px;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  justify-content: center;
+}
+.btn:hover { background: var(--accent); border-color: var(--accent); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-outline {
+  background: transparent;
+  color: var(--ink);
+  width: auto;
+  padding: 8px 18px;
+  font-size: 11px;
+}
+.btn-outline:hover { background: var(--ink); color: var(--paper); }
+.btn-sm { padding: 8px 16px; font-size: 10px; width: auto; }
+
+/* ── SPINNER ── */
+.spin { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+.btn.loading .spin { display: block; }
+.btn.loading .btn-label { opacity: 0.6; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESULTS ── */
+#output { margin-top: 2.5rem; }
+
+/* Keyword Results */
+.kw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 2rem; }
+.kw-card {
+  background: white;
+  border: 2px solid var(--border);
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.kw-card:hover { border-color: var(--ink); transform: translateY(-2px); box-shadow: 4px 4px 0 var(--ink); }
+.kw-card.selected { border-color: var(--accent); background: #FFF5F2; box-shadow: 4px 4px 0 var(--accent); }
+.kw-word { font-size: 14px; font-weight: 600; margin-bottom: 8px; line-height: 1.3; }
+.kw-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+.kw-pill {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 0;
+  font-weight: 700;
+}
+.pill-vol { background: #EEF6FF; color: #1A7AE8; }
+.pill-comp { background: #FFF5EE; color: #E8441A; }
+.pill-score { background: #EEFAF3; color: #1AAF5D; }
+
+/* Title Results */
+.title-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 2rem; }
+.title-card {
+  background: white;
+  border: 2px solid var(--border);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.title-score-box {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 28px;
+  border: 2px solid var(--border);
+}
+.score-a { border-color: var(--green); color: var(--green); background: #EEFAF3; }
+.score-b { border-color: var(--gold); color: var(--gold); background: #FDF8EE; }
+.score-c { border-color: var(--accent); color: var(--accent); background: #FFF5F2; }
+.title-text { flex: 1; font-size: 14px; font-weight: 500; line-height: 1.4; }
+.title-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* Thumbnail */
+.thumb-result { background: white; border: 2px solid var(--border); padding: 1.5rem; margin-bottom: 1.5rem; }
+.thumb-result img { width: 100%; max-width: 480px; display: block; margin-bottom: 1rem; border: 1px solid var(--border); }
+.thumb-score-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.big-score { font-family: var(--display); font-size: 56px; line-height: 1; }
+.score-label-txt { font-family: var(--mono); font-size: 11px; color: #666; }
+
+/* Feedback tags */
+.feedback-list { display: flex; flex-direction: column; gap: 6px; }
+.feedback-item { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; }
+.fb-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+
+/* Section heading */
+.section-label {
+  font-family: var(--display);
+  font-size: 24px;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label .num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 700;
+  border: 2px solid var(--accent);
+  padding: 2px 8px;
+}
+
+/* Error */
+.error { background: #FFF5F2; border: 2px solid var(--accent); padding: 1rem 1.25rem; font-family: var(--mono); font-size: 12px; color: var(--accent); margin-top: 1rem; display: none; }
+
+/* Row layout */
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 600px) { .row2 { grid-template-columns: 1fr; } }
+
+/* Divider */
+.divider { border: none; border-top: 2px solid var(--border); margin: 2rem 0; }
+
+/* Copy toast */
+#toast {
+  position: fixed; bottom: 2rem; right: 2rem;
+  background: var(--ink); color: var(--paper);
+  font-family: var(--mono); font-size: 12px;
+  padding: 10px 20px;
+  transform: translateY(60px); opacity: 0;
+  transition: all 0.3s;
+  z-index: 9999;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+
+/* Niche presets */
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+.preset-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 12px;
+  border: 1.5px solid var(--border);
+  background: var(--paper2);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.03em;
+}
+.preset-tag:hover { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">TITLE &<br><span>THUMBNAIL</span><br>LAB</div>
+      <div class="header-meta">
+        POWERED BY CLAUDE AI<br>
+        + VIDIQ DATA<br>
+        v1.0 — AGRICULTURE NICHE
+      </div>
+    </div>
+    <div class="header-sub">// keyword research · title generation · title scoring · thumbnail concepts</div>
+    <div class="workspace-row">
+      <button class="ws-btn" onclick="saveWorkspace()">Save & Continue Later</button>
+      <button class="ws-btn" onclick="restoreWorkspace(true)">Restore Saved Work</button>
+      <button class="ws-btn" onclick="clearWorkspace()">Clear Saved Work</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('keywords')">01 Keywords</button>
+    <button class="tab" onclick="switchTab('titles')">02 Titles</button>
+    <button class="tab" onclick="switchTab('thumbnail')">03 Thumbnail</button>
+    <button class="tab" onclick="switchTab('fullrun')">04 Full Run</button>
+  </div>
+
+  <!-- ══ PANEL 1: KEYWORDS ══ -->
+  <div id="panel-keywords" class="panel active">
+    <div class="field">
+      <label class="label">Seed keyword</label>
+      <div class="presets">
+        <span class="preset-tag" onclick="setKeyword('low maintenance perennials')">low maintenance perennials</span>
+        <span class="preset-tag" onclick="setKeyword('container gardening beginners')">container gardening beginners</span>
+        <span class="preset-tag" onclick="setKeyword('drought tolerant plants')">drought tolerant plants</span>
+        <span class="preset-tag" onclick="setKeyword('perennials that spread')">perennials that spread</span>
+        <span class="preset-tag" onclick="setKeyword('easy garden plants')">easy garden plants</span>
+        <span class="preset-tag" onclick="setKeyword('plants that come back every year')">plants that come back every year</span>
+      </div>
+      <input type="text" id="kwInput" placeholder="e.g. low maintenance perennials" />
+    </div>
+    <button class="btn" id="kwBtn" onclick="runKeywords()">
+      <div class="spin"></div>
+      <span class="btn-label">Research Keywords</span>
+    </button>
+    <div class="error" id="kwError"></div>
+    <div id="kwOutput"></div>
+  </div>
+
+  <!-- ══ PANEL 2: TITLES ══ -->
+  <div id="panel-titles" class="panel">
+    <div class="field">
+      <label class="label">Video topic / description</label>
+      <textarea id="titleTopic" placeholder="e.g. 17 perennials that survive heat, drought, and neglect — works in garden beds and containers. For gardening beginners who keep killing plants."></textarea>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label class="label">Number of titles</label>
+        <select id="numTitles">
+          <option value="5">5 titles</option>
+          <option value="8" selected>8 titles</option>
+          <option value="10">10 titles</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="label">Format</label>
+        <select id="titleFormat">
+          <option value="long">Long-form (10+ min)</option>
+          <option value="short">Shorts</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" id="titleBtn" onclick="runTitles()">
+      <div class="spin"></div>
+      <span class="btn-label">Generate + Score Titles</span>
+    </button>
+    <div class="error" id="titleError"></div>
+    <div id="titleOutput"></div>
+  </div>
+
+  <!-- ══ PANEL 3: THUMBNAIL ══ -->
+  <div id="panel-thumbnail" class="panel">
+    <div class="field">
+      <label class="label">Video title</label>
+      <input type="text" id="thumbTitle" placeholder="e.g. 17 Plants That Refuse to Die (Beds, Pots, or Barely Any Effort)" />
+    </div>
+    <div class="field">
+      <label class="label">Thumbnail concept direction</label>
+      <textarea id="thumbConcept" placeholder="e.g. Split image: dead wilted plant on left vs lush blooming garden on right. Bold text overlay '17 PLANTS THAT WON'T DIE'. High contrast, bright colours."></textarea>
+    </div>
+    <button class="btn" id="thumbBtn" onclick="runThumbnail()">
+      <div class="spin"></div>
+      <span class="btn-label">Generate Thumbnail Concept</span>
+    </button>
+    <div class="error" id="thumbError"></div>
+    <div id="thumbOutput"></div>
+  </div>
+
+  <!-- ══ PANEL 4: FULL RUN ══ -->
+  <div id="panel-fullrun" class="panel">
+    <div class="field">
+      <label class="label">Video topic (one sentence)</label>
+      <input type="text" id="fullTopic" placeholder="e.g. 17 low maintenance perennials that work in beds and containers" />
+    </div>
+    <div class="field">
+      <label class="label">Primary keyword</label>
+      <input type="text" id="fullKeyword" placeholder="e.g. low maintenance perennials" />
+    </div>
+    <button class="btn" id="fullBtn" onclick="runFull()">
+      <div class="spin"></div>
+      <span class="btn-label">Run Full Research Pipeline</span>
+    </button>
+    <div class="error" id="fullError"></div>
+    <div id="fullOutput"></div>
+  </div>
+
+</div>
+
+<div id="toast">Copied to clipboard</div>
+
+<script>
+// ── TAB SWITCHING ──
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const panels = ['keywords','titles','thumbnail','fullrun'];
+    t.classList.toggle('active', panels[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+function setKeyword(kw) {
+  document.getElementById('kwInput').value = kw;
+}
+
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = loading;
+  btn.classList.toggle('loading', loading);
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+
+function hideError(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  });
+}
+
+const WORKSPACE_KEY = 'titleThumbnailLabWorkspaceV1';
+const WORKSPACE_ID_KEY = 'rootwardWorkspaceIdV1';
+const AUTH_TOKEN_KEY = 'rootwardSupabaseTokenV1';
+let cloudEnabled = false;
+
+function getWorkspaceId() {
+  let id = localStorage.getItem(WORKSPACE_ID_KEY);
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : `ws-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    localStorage.setItem(WORKSPACE_ID_KEY, id);
+  }
+  return id;
+}
+
+async function saveCloudWorkspace(payload) {
+  if (!cloudEnabled) return;
+  const token = localStorage.getItem(AUTH_TOKEN_KEY) || '';
+  await fetch(`/api/workspace?workspaceId=${encodeURIComponent(getWorkspaceId())}&tool=title-thumbnail-tool`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify({ workspaceId: getWorkspaceId(), tool: 'title-thumbnail-tool', payload })
+  });
+}
+
+async function loadCloudWorkspace() {
+  if (!cloudEnabled) return null;
+  const token = localStorage.getItem(AUTH_TOKEN_KEY) || '';
+  const res = await fetch(`/api/workspace?workspaceId=${encodeURIComponent(getWorkspaceId())}&tool=title-thumbnail-tool`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Cloud restore failed');
+  return data.state?.payload || null;
+}
+
+function saveWorkspace(showToast = true) {
+  const payload = {
+    savedAt: Date.now(),
+    kwInput: document.getElementById('kwInput').value,
+    titleTopic: document.getElementById('titleTopic').value,
+    numTitles: document.getElementById('numTitles').value,
+    titleFormat: document.getElementById('titleFormat').value,
+    thumbTitle: document.getElementById('thumbTitle').value,
+    thumbConcept: document.getElementById('thumbConcept').value,
+    fullTopic: document.getElementById('fullTopic').value,
+    fullKeyword: document.getElementById('fullKeyword').value,
+    kwOutput: document.getElementById('kwOutput').innerHTML,
+    titleOutput: document.getElementById('titleOutput').innerHTML,
+    thumbOutput: document.getElementById('thumbOutput').innerHTML,
+    fullOutput: document.getElementById('fullOutput').innerHTML
+  };
+  localStorage.setItem(WORKSPACE_KEY, JSON.stringify(payload));
+  saveCloudWorkspace(payload).catch(() => {});
+  if (showToast) {
+    const t = document.getElementById('toast');
+    t.textContent = 'Workspace saved';
+    t.classList.add('show');
+    setTimeout(() => {
+      t.classList.remove('show');
+      t.textContent = 'Copied to clipboard';
+    }, 1800);
+  }
+}
+
+function applyWorkspaceData(d, showToast = false) {
+  try {
+    document.getElementById('kwInput').value = d.kwInput || '';
+    document.getElementById('titleTopic').value = d.titleTopic || '';
+    document.getElementById('numTitles').value = d.numTitles || '8';
+    document.getElementById('titleFormat').value = d.titleFormat || 'long';
+    document.getElementById('thumbTitle').value = d.thumbTitle || '';
+    document.getElementById('thumbConcept').value = d.thumbConcept || '';
+    document.getElementById('fullTopic').value = d.fullTopic || '';
+    document.getElementById('fullKeyword').value = d.fullKeyword || '';
+    document.getElementById('kwOutput').innerHTML = d.kwOutput || '';
+    document.getElementById('titleOutput').innerHTML = d.titleOutput || '';
+    document.getElementById('thumbOutput').innerHTML = d.thumbOutput || '';
+    document.getElementById('fullOutput').innerHTML = d.fullOutput || '';
+    if (showToast) {
+      const t = document.getElementById('toast');
+      t.textContent = 'Workspace restored';
+      t.classList.add('show');
+      setTimeout(() => {
+        t.classList.remove('show');
+        t.textContent = 'Copied to clipboard';
+      }, 1800);
+    }
+  } catch (_) {}
+}
+
+async function restoreWorkspace(showToast = false) {
+  let data = null;
+  try {
+    const cloudData = await loadCloudWorkspace();
+    if (cloudData) data = cloudData;
+  } catch (_) {}
+  if (!data) {
+    const raw = localStorage.getItem(WORKSPACE_KEY);
+    if (!raw) return;
+    try { data = JSON.parse(raw); } catch (_) { return; }
+  }
+  applyWorkspaceData(data, showToast);
+}
+
+function clearWorkspace() {
+  localStorage.removeItem(WORKSPACE_KEY);
+  const t = document.getElementById('toast');
+  t.textContent = 'Saved workspace cleared';
+  t.classList.add('show');
+  setTimeout(() => {
+    t.classList.remove('show');
+    t.textContent = 'Copied to clipboard';
+  }, 1800);
+}
+
+function scoreClass(s) {
+  if (s >= 70) return 'score-a';
+  if (s >= 50) return 'score-b';
+  return 'score-c';
+}
+
+// ── CLAUDE API ──
+async function callClaude(prompt, maxTokens = 2000) {
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'API request failed');
+  }
+  const text = data.content?.map(b => b.text || '').join('') || '';
+  return text.replace(/```json|```/g, '').trim();
+}
+
+['kwInput','titleTopic','numTitles','titleFormat','thumbTitle','thumbConcept','fullTopic','fullKeyword'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', () => saveWorkspace(false));
+  el.addEventListener('change', () => saveWorkspace(false));
+});
+fetch('/api/health')
+  .then(r => r.json())
+  .then(d => { cloudEnabled = Boolean(d.hasSupabase); })
+  .catch(() => {});
+restoreWorkspace(false);
+setInterval(() => saveWorkspace(false), 15000);
+
+// ══════════════════════════
+// 01 — KEYWORDS
+// ══════════════════════════
+async function runKeywords() {
+  const kw = document.getElementById('kwInput').value.trim();
+  if (!kw) return showError('kwError', 'Enter a keyword first.');
+  hideError('kwError');
+  setLoading('kwBtn', true);
+  document.getElementById('kwOutput').innerHTML = '';
+
+  try {
+    const raw = await callClaude(`You are a YouTube SEO expert specialising in gardening/agriculture content.
+
+Generate keyword research data for the seed keyword: "${kw}"
+
+Return ONLY this JSON (no markdown, no backticks):
+{
+  "seed": {
+    "keyword": "${kw}",
+    "volume": 72,
+    "competition": 45,
+    "score": 68,
+    "monthly_searches": "18,000"
+  },
+  "related": [
+    { "keyword": "...", "volume": 80, "competition": 30, "score": 75, "monthly_searches": "12,000" },
+    { "keyword": "...", "volume": 65, "competition": 55, "score": 58, "monthly_searches": "8,500" },
+    { "keyword": "...", "volume": 70, "competition": 25, "score": 78, "monthly_searches": "6,000" },
+    { "keyword": "...", "volume": 55, "competition": 20, "score": 72, "monthly_searches": "4,200" },
+    { "keyword": "...", "volume": 85, "competition": 70, "score": 45, "monthly_searches": "22,000" },
+    { "keyword": "...", "volume": 60, "competition": 15, "score": 80, "monthly_searches": "3,100" },
+    { "keyword": "...", "volume": 45, "competition": 10, "score": 82, "monthly_searches": "1,800" },
+    { "keyword": "...", "volume": 78, "competition": 40, "score": 70, "monthly_searches": "9,400" }
+  ],
+  "insights": "2-3 sentence strategic insight about this keyword cluster for a new gardening channel."
+}
+
+Scores are 0-100. Volume = search demand. Competition = how crowded. Score = overall opportunity (high volume + low competition = high score).
+Make keywords realistic and specific to the gardening/agriculture niche. Vary the metrics meaningfully.`);
+
+    const data = JSON.parse(raw);
+    renderKeywords(data);
+  } catch(e) {
+    showError('kwError', 'Research failed: ' + e.message);
+  } finally {
+    setLoading('kwBtn', false);
+  }
+}
+
+function renderKeywords(data) {
+  const all = [data.seed, ...data.related];
+  let html = `<div style="margin-top:2rem;">`;
+  html += `<div class="section-label"><span class="num">01</span> KEYWORD OPPORTUNITIES</div>`;
+  html += `<div class="kw-grid">`;
+  all.forEach((kw, i) => {
+    const isSeed = i === 0;
+    html += `<div class="kw-card ${isSeed ? 'selected' : ''}" onclick="selectKeyword(this, '${kw.keyword.replace(/'/g,"\\'")}')">
+      ${isSeed ? '<div style="font-family:var(--mono);font-size:9px;color:var(--accent);font-weight:700;margin-bottom:6px;letter-spacing:0.1em;">SEED KEYWORD</div>' : ''}
+      <div class="kw-word">${kw.keyword}</div>
+      <div class="kw-meta">
+        <span class="kw-pill pill-vol">VOL ${kw.volume}</span>
+        <span class="kw-pill pill-comp">COMP ${kw.competition}</span>
+        <span class="kw-pill pill-score">OPP ${kw.score}</span>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:#888;margin-top:6px;">~${kw.monthly_searches}/mo</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  if (data.insights) {
+    html += `<div style="background:white;border:2px solid var(--border);padding:1rem 1.25rem;margin-bottom:1.5rem;">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--accent);font-weight:700;margin-bottom:6px;letter-spacing:0.1em;">STRATEGIC INSIGHT</div>
+      <div style="font-size:13px;line-height:1.7;color:#333;">${data.insights}</div>
+    </div>`;
+  }
+
+  html += `<button class="btn btn-outline" onclick="useKeywordForTitles()">→ Use selected keyword for title research</button>`;
+  html += `</div>`;
+  document.getElementById('kwOutput').innerHTML = html;
+}
+
+let selectedKeyword = '';
+function selectKeyword(el, kw) {
+  document.querySelectorAll('.kw-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedKeyword = kw;
+}
+function useKeywordForTitles() {
+  const kw = selectedKeyword || document.getElementById('kwInput').value;
+  document.getElementById('titleTopic').value = kw;
+  switchTab('titles');
+}
+
+// ══════════════════════════
+// 02 — TITLES
+// ══════════════════════════
+async function runTitles() {
+  const topic = document.getElementById('titleTopic').value.trim();
+  const num = document.getElementById('numTitles').value;
+  const fmt = document.getElementById('titleFormat').value;
+  if (!topic) return showError('titleError', 'Enter a topic first.');
+  hideError('titleError');
+  setLoading('titleBtn', true);
+  document.getElementById('titleOutput').innerHTML = '';
+
+  try {
+    const raw = await callClaude(`You are a YouTube title expert specialising in gardening/agriculture content. Your titles are proven to drive high CTR.
+
+Topic: "${topic}"
+Format: ${fmt === 'long' ? 'Long-form video (10+ minutes)' : 'YouTube Short'}
+Number of titles needed: ${num}
+
+Generate ${num} YouTube title options and score each one 0-100 for CTR potential.
+
+Title formulas to use (vary them):
+- Listicle: "X Plants/Things That..."
+- Curiosity gap: "The [Plant/Trick] Nobody Told You About"
+- Relatability: "If You Keep Killing Plants, Watch This"
+- Stat/shock: "Americans Waste $X Billion on..."
+- Contrarian: "Stop [Doing X] — Do This Instead"
+- Promise/transformation: "Plant These Once, Never Buy Again"
+- Fear/urgency: "Why Your [Plants] Die Every Summer"
+
+Return ONLY this JSON (no markdown, no backticks):
+{
+  "titles": [
+    { "title": "...", "score": 82, "formula": "Listicle", "why": "One sentence on why this works." },
+    ...
+  ],
+  "top_pick": 0,
+  "seo_note": "One sentence on the best keyword angle for this topic."
+}
+
+Score aggressively — most titles for gardening content score 40-75. A great title scores 75+.`, 2000);
+
+    const data = JSON.parse(raw);
+    renderTitles(data);
+  } catch(e) {
+    showError('titleError', 'Generation failed: ' + e.message);
+  } finally {
+    setLoading('titleBtn', false);
+  }
+}
+
+function renderTitles(data) {
+  let html = `<div style="margin-top:2rem;">`;
+  html += `<div class="section-label"><span class="num">02</span> TITLE CANDIDATES</div>`;
+
+  if (data.seo_note) {
+    html += `<div style="background:white;border:2px solid var(--border);padding:0.875rem 1.25rem;margin-bottom:1rem;font-family:var(--mono);font-size:11px;color:#555;line-height:1.6;">
+      <strong style="color:var(--accent);">SEO NOTE</strong> — ${data.seo_note}
+    </div>`;
+  }
+
+  html += `<div class="title-list">`;
+  data.titles.forEach((t, i) => {
+    const isTop = i === (data.top_pick || 0);
+    html += `<div class="title-card" style="${isTop ? 'border-color:var(--green);' : ''}">
+      <div class="title-score-box ${scoreClass(t.score)}">${t.score}</div>
+      <div style="flex:1;">
+        ${isTop ? '<div style="font-family:var(--mono);font-size:9px;color:var(--green);font-weight:700;margin-bottom:4px;letter-spacing:0.1em;">★ TOP PICK</div>' : ''}
+        <div class="title-text">${t.title}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:#888;margin-top:4px;">${t.formula} — ${t.why}</div>
+      </div>
+      <div class="title-actions">
+        <button class="btn btn-sm btn-outline" onclick="copyText('${t.title.replace(/'/g,"\\'")}')">Copy</button>
+        <button class="btn btn-sm btn-outline" onclick="sendToThumbnail('${t.title.replace(/'/g,"\\'")}')">→ Thumb</button>
+      </div>
+    </div>`;
+  });
+  html += `</div></div>`;
+  document.getElementById('titleOutput').innerHTML = html;
+}
+
+function sendToThumbnail(title) {
+  document.getElementById('thumbTitle').value = title;
+  switchTab('thumbnail');
+}
+
+// ══════════════════════════
+// 03 — THUMBNAIL
+// ══════════════════════════
+async function runThumbnail() {
+  const title = document.getElementById('thumbTitle').value.trim();
+  const concept = document.getElementById('thumbConcept').value.trim();
+  if (!title) return showError('thumbError', 'Enter a video title first.');
+  hideError('thumbError');
+  setLoading('thumbBtn', true);
+  document.getElementById('thumbOutput').innerHTML = '';
+
+  try {
+    const raw = await callClaude(`You are a YouTube thumbnail strategist for a gardening/agriculture faceless channel.
+
+Video title: "${title}"
+Creator's concept direction: "${concept || 'not specified — generate the best concept'}"
+
+Generate 3 distinct thumbnail concepts + a detailed brief for a designer or AI image tool.
+
+Return ONLY this JSON (no markdown, no backticks):
+{
+  "concepts": [
+    {
+      "name": "Concept A name",
+      "score": 82,
+      "layout": "Describe the visual layout in one sentence",
+      "background": "Describe the background",
+      "foreground": "Describe the main visual element",
+      "text_overlay": "Exact text to show on thumbnail",
+      "text_style": "Bold/colour/size notes",
+      "colour_palette": ["#HEX1", "#HEX2", "#HEX3"],
+      "ai_prompt": "A detailed prompt you'd paste into Midjourney/DALL-E to generate this thumbnail image",
+      "why_it_works": "One sentence on the psychological trigger this thumbnail uses"
+    },
+    { ... },
+    { ... }
+  ],
+  "best_concept": 0,
+  "canva_tip": "One specific Canva layout or design tip for this thumbnail style."
+}`, 2500);
+
+    const data = JSON.parse(raw);
+    renderThumbnail(data, title);
+  } catch(e) {
+    showError('thumbError', 'Generation failed: ' + e.message);
+  } finally {
+    setLoading('thumbBtn', false);
+  }
+}
+
+function renderThumbnail(data, title) {
+  let html = `<div style="margin-top:2rem;">`;
+  html += `<div class="section-label"><span class="num">03</span> THUMBNAIL CONCEPTS</div>`;
+
+  if (data.canva_tip) {
+    html += `<div style="background:white;border:2px solid var(--border);padding:0.875rem 1.25rem;margin-bottom:1rem;font-family:var(--mono);font-size:11px;color:#555;line-height:1.6;">
+      <strong style="color:var(--accent2);">CANVA TIP</strong> — ${data.canva_tip}
+    </div>`;
+  }
+
+  data.concepts.forEach((c, i) => {
+    const isTop = i === (data.best_concept || 0);
+    html += `<div style="background:white;border:2px solid ${isTop ? 'var(--green)' : 'var(--border)'};padding:1.5rem;margin-bottom:1rem;">
+      <div style="display:flex;align-items:flex-start;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
+        <div style="flex:1;">
+          ${isTop ? '<div style="font-family:var(--mono);font-size:9px;color:var(--green);font-weight:700;margin-bottom:6px;letter-spacing:0.1em;">★ RECOMMENDED</div>' : ''}
+          <div style="font-family:var(--display);font-size:22px;letter-spacing:0.05em;margin-bottom:4px;">${c.name}</div>
+          <div style="font-family:var(--mono);font-size:10px;color:#888;">${c.why_it_works}</div>
+        </div>
+        <div style="font-family:var(--display);font-size:40px;color:${c.score>=75?'var(--green)':c.score>=55?'var(--gold)':'var(--accent)'};">${c.score}</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;">
+        <div style="background:var(--paper2);padding:0.75rem;">
+          <div style="font-family:var(--mono);font-size:9px;color:#888;font-weight:700;margin-bottom:4px;letter-spacing:0.08em;">TEXT OVERLAY</div>
+          <div style="font-size:13px;font-weight:600;">"${c.text_overlay}"</div>
+          <div style="font-family:var(--mono);font-size:10px;color:#888;margin-top:2px;">${c.text_style}</div>
+        </div>
+        <div style="background:var(--paper2);padding:0.75rem;">
+          <div style="font-family:var(--mono);font-size:9px;color:#888;font-weight:700;margin-bottom:4px;letter-spacing:0.08em;">COLOUR PALETTE</div>
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            ${(c.colour_palette||[]).map(hex=>`<div style="width:28px;height:28px;background:${hex};border:1px solid var(--border);title='${hex}'"></div>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#F9F8F5;border:1.5px dashed var(--border);padding:1rem;margin-bottom:1rem;">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--accent2);font-weight:700;margin-bottom:6px;letter-spacing:0.08em;">AI IMAGE PROMPT (Midjourney / DALL-E)</div>
+        <div style="font-size:12px;line-height:1.6;color:#444;">${c.ai_prompt}</div>
+      </div>
+
+      <button class="btn btn-sm btn-outline" onclick="copyText('${(c.ai_prompt||'').replace(/'/g,"\\'")}')">Copy AI Prompt</button>
+    </div>`;
+  });
+
+  html += `</div>`;
+  document.getElementById('thumbOutput').innerHTML = html;
+}
+
+// ══════════════════════════
+// 04 — FULL RUN
+// ══════════════════════════
+async function runFull() {
+  const topic = document.getElementById('fullTopic').value.trim();
+  const keyword = document.getElementById('fullKeyword').value.trim();
+  if (!topic || !keyword) return showError('fullError', 'Fill in both fields.');
+  hideError('fullError');
+  setLoading('fullBtn', true);
+  document.getElementById('fullOutput').innerHTML = '<div style="font-family:var(--mono);font-size:12px;color:#888;padding:2rem 0;">Running full pipeline — keywords → titles → thumbnail concepts...</div>';
+
+  try {
+    const raw = await callClaude(`You are a YouTube growth strategist for a gardening/agriculture channel. Run a complete pre-production research pipeline.
+
+Video topic: "${topic}"
+Primary keyword: "${keyword}"
+
+Return ONLY this comprehensive JSON (no markdown, no backticks):
+{
+  "keyword_summary": {
+    "primary": "${keyword}",
+    "volume": 72,
+    "competition": 45,
+    "opportunity_score": 68,
+    "top_3_related": [
+      {"keyword":"...", "score": 75},
+      {"keyword":"...", "score": 71},
+      {"keyword":"...", "score": 68}
+    ]
+  },
+  "titles": [
+    {"title":"...", "score":82, "formula":"Listicle"},
+    {"title":"...", "score":78, "formula":"Curiosity gap"},
+    {"title":"...", "score":74, "formula":"Relatability"},
+    {"title":"...", "score":71, "formula":"Contrarian"},
+    {"title":"...", "score":68, "formula":"Promise"}
+  ],
+  "top_title_index": 0,
+  "thumbnail": {
+    "recommended_concept": "One clear visual concept description",
+    "text_overlay": "Exact text for thumbnail",
+    "ai_prompt": "Full Midjourney/DALL-E prompt",
+    "colour_palette": ["#HEX1","#HEX2","#HEX3"]
+  },
+  "upload_checklist": [
+    "Use primary keyword in title",
+    "Add keyword in first 2 lines of description",
+    "...",
+    "...",
+    "..."
+  ],
+  "strategic_note": "2-3 sentence strategic note on this video's growth potential and what would make it outperform competitors."
+}`, 3000);
+
+    const data = JSON.parse(raw);
+    renderFullRun(data);
+  } catch(e) {
+    showError('fullError', 'Pipeline failed: ' + e.message);
+  } finally {
+    setLoading('fullBtn', false);
+  }
+}
+
+function renderFullRun(data) {
+  const kw = data.keyword_summary;
+  let html = `<div style="margin-top:2rem;">`;
+
+  // Keywords
+  html += `<div class="section-label"><span class="num">01</span> KEYWORD SNAPSHOT</div>`;
+  html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.5rem;">
+    <div style="background:white;border:2px solid var(--border);padding:1rem;text-align:center;">
+      <div style="font-family:var(--display);font-size:40px;color:var(--accent2);">${kw.volume}</div>
+      <div style="font-family:var(--mono);font-size:10px;color:#888;">VOLUME</div>
+    </div>
+    <div style="background:white;border:2px solid var(--border);padding:1rem;text-align:center;">
+      <div style="font-family:var(--display);font-size:40px;color:var(--accent);">${kw.competition}</div>
+      <div style="font-family:var(--mono);font-size:10px;color:#888;">COMPETITION</div>
+    </div>
+    <div style="background:white;border:2px solid var(--border);padding:1rem;text-align:center;">
+      <div style="font-family:var(--display);font-size:40px;color:var(--green);">${kw.opportunity_score}</div>
+      <div style="font-family:var(--mono);font-size:10px;color:#888;">OPPORTUNITY</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2rem;">
+    ${kw.top_3_related.map(r=>`<div style="background:white;border:1.5px solid var(--border);padding:6px 14px;font-size:12px;"><strong>${r.score}</strong> <span style="color:#666;">${r.keyword}</span></div>`).join('')}
+  </div>`;
+
+  // Titles
+  html += `<div class="section-label"><span class="num">02</span> TOP TITLES</div>`;
+  html += `<div class="title-list" style="margin-bottom:2rem;">`;
+  data.titles.forEach((t, i) => {
+    const isTop = i === (data.top_title_index || 0);
+    html += `<div class="title-card" style="${isTop ? 'border-color:var(--green);' : ''}">
+      <div class="title-score-box ${scoreClass(t.score)}">${t.score}</div>
+      <div style="flex:1;">
+        ${isTop ? '<div style="font-family:var(--mono);font-size:9px;color:var(--green);font-weight:700;margin-bottom:3px;letter-spacing:0.1em;">★ USE THIS</div>' : ''}
+        <div class="title-text">${t.title}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:#888;margin-top:3px;">${t.formula}</div>
+      </div>
+      <button class="btn btn-sm btn-outline" onclick="copyText('${t.title.replace(/'/g,"\\'")}')">Copy</button>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Thumbnail
+  const th = data.thumbnail;
+  html += `<div class="section-label"><span class="num">03</span> THUMBNAIL BRIEF</div>`;
+  html += `<div style="background:white;border:2px solid var(--green);padding:1.5rem;margin-bottom:2rem;">
+    <div style="font-size:14px;font-weight:600;margin-bottom:8px;">${th.recommended_concept}</div>
+    <div style="font-family:var(--mono);font-size:11px;color:#666;margin-bottom:12px;">TEXT: "${th.text_overlay}"</div>
+    <div style="background:var(--paper2);border:1.5px dashed var(--border);padding:1rem;margin-bottom:12px;">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--accent2);font-weight:700;margin-bottom:6px;letter-spacing:0.08em;">AI IMAGE PROMPT</div>
+      <div style="font-size:12px;line-height:1.6;">${th.ai_prompt}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;gap:6px;">${(th.colour_palette||[]).map(h=>`<div style="width:28px;height:28px;background:${h};border:1px solid var(--border);"></div>`).join('')}</div>
+      <button class="btn btn-sm btn-outline" onclick="copyText('${(th.ai_prompt||'').replace(/'/g,"\\'")}')">Copy prompt</button>
+    </div>
+  </div>`;
+
+  // Checklist
+  html += `<div class="section-label"><span class="num">04</span> UPLOAD CHECKLIST</div>`;
+  html += `<div style="background:white;border:2px solid var(--border);padding:1.25rem;margin-bottom:2rem;">`;
+  (data.upload_checklist||[]).forEach(item => {
+    html += `<div style="display:flex;gap:10px;margin-bottom:8px;font-size:13px;align-items:flex-start;">
+      <span style="color:var(--green);font-weight:700;flex-shrink:0;">✓</span>
+      <span>${item}</span>
+    </div>`;
+  });
+  html += `</div>`;
+
+  if (data.strategic_note) {
+    html += `<div style="background:var(--ink);color:var(--paper);padding:1.25rem 1.5rem;font-size:13px;line-height:1.7;">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--accent);font-weight:700;margin-bottom:8px;letter-spacing:0.1em;">STRATEGIC NOTE</div>
+      ${data.strategic_note}
+    </div>`;
+  }
+
+  html += `</div>`;
+  document.getElementById('fullOutput').innerHTML = html;
+}
+</script>
+</body>
+</html>
