@@ -4,7 +4,7 @@
   "private": true,
   "description": "Local server for script-analyser.html — analyse competitor scripts and generate superior ones",
   "scripts": {
-    "start": "node server.js"
+    "start": "node local-dev-server.js"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
