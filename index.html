@@ -219,6 +219,15 @@
       document.getElementById("authStatus").textContent = text;
     }
 
+    async function safeJson(res) {
+      const text = await res.text();
+      try {
+        return text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error(`Server returned non-JSON (status ${res.status}).`);
+      }
+    }
+
     function setAuthUI(isSignedIn) {
       const signOutBtn = document.getElementById("signOutBtn");
       const signInBtn = document.getElementById("signInBtn");
@@ -236,7 +245,8 @@
 
     async function loadConfig() {
       const res = await fetch("/api/public-config");
-      const cfg = await res.json();
+      const cfg = await safeJson(res);
+      if (!res.ok) throw new Error(cfg.error || "Could not load server config.");
       if (!cfg.hasSupabase) {
         setStatus("Supabase is not configured on server yet.");
         return false;
@@ -256,7 +266,7 @@
       const res = await fetch("/api/me", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) {
         localStorage.removeItem(AUTH_TOKEN_KEY);
         setAuthUI(false);
@@ -288,7 +298,7 @@
           },
           body: JSON.stringify({ email, password })
         });
-        const data = await res.json();
+        const data = await safeJson(res);
         if (!res.ok) {
           throw new Error(data.error || "Sign in failed");
         }
@@ -298,7 +308,7 @@
         const me = await fetch("/api/me", {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const meData = await me.json();
+        const meData = await safeJson(me);
         if (!me.ok || !meData.user?.isAdmin) {
           localStorage.removeItem(AUTH_TOKEN_KEY);
           throw new Error("Access denied. Admin account only.");
