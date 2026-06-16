@@ -43,8 +43,7 @@ When enabled, both tools support cloud-backed **Save & Continue Later** across d
 ## 3c) Email + password login flow
 
 - Open `/` and use the auth box.
-- New user: click **Sign Up** (email + password).
-- Existing user: click **Sign In**.
+- Sign in with your existing Supabase email/password user.
 - The access token is stored in browser localStorage and used by both tools for cloud save.
 
 ## 4) Test routes

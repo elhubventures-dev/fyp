@@ -150,8 +150,7 @@
         <input id="emailInput" type="email" placeholder="Email" value="elhubv@gmail.com" />
         <input id="passwordInput" type="password" placeholder="Password" />
         <button id="signInBtn" onclick="signInWithPassword()">Sign In</button>
-        <button id="signUpBtn" onclick="signUpWithPassword()">Sign Up</button>
-        <button onclick="signOut()">Sign Out</button>
+        <button id="signOutBtn" onclick="signOut()" style="display:none;">Sign Out</button>
       </div>
       <div class="auth-status" id="authStatus">Checking authentication...</div>
     </section>
@@ -178,6 +177,17 @@
       document.getElementById("authStatus").textContent = text;
     }
 
+    function setAuthUI(isSignedIn) {
+      const signOutBtn = document.getElementById("signOutBtn");
+      const signInBtn = document.getElementById("signInBtn");
+      const emailInput = document.getElementById("emailInput");
+      const passwordInput = document.getElementById("passwordInput");
+      signOutBtn.style.display = isSignedIn ? "inline-block" : "none";
+      signInBtn.style.display = isSignedIn ? "none" : "inline-block";
+      passwordInput.style.display = isSignedIn ? "none" : "inline-block";
+      emailInput.readOnly = isSignedIn;
+    }
+
     async function loadConfig() {
       const res = await fetch("/api/public-config");
       const cfg = await res.json();
@@ -193,7 +203,8 @@
     async function whoAmI() {
       const token = localStorage.getItem(AUTH_TOKEN_KEY) || "";
       if (!token) {
-        setStatus("Not signed in. Send magic link to enable cross-device save.");
+        setAuthUI(false);
+        setStatus("Not signed in.");
         return;
       }
       const res = await fetch("/api/me", {
@@ -202,9 +213,11 @@
       const data = await res.json();
       if (!res.ok) {
         localStorage.removeItem(AUTH_TOKEN_KEY);
-        setStatus("Session expired. Send a new magic link.");
+        setAuthUI(false);
+        setStatus("Session expired. Sign in again.");
         return;
       }
+      setAuthUI(true);
       setStatus(`Signed in as ${data.user.email}. Cloud save active.`);
     }
 
@@ -236,6 +249,7 @@
         const token = data.access_token || data.session?.access_token || "";
         if (!token) throw new Error("No access token returned");
         localStorage.setItem(AUTH_TOKEN_KEY, token);
+        setAuthUI(true);
         setStatus(`Signed in as ${email}. Cloud save active.`);
       } catch (err) {
         setStatus(`Error: ${err.message}`);
@@ -245,45 +259,9 @@
       }
     }
 
-    async function signUpWithPassword() {
-      const email = document.getElementById("emailInput").value.trim();
-      const password = document.getElementById("passwordInput").value;
-      if (!email || !password) return setStatus("Enter email and password.");
-      if (password.length < 6) return setStatus("Use at least 6 characters for password.");
-      if (!(await loadConfig())) return;
-      const btn = document.getElementById("signUpBtn");
-      btn.disabled = true;
-      btn.textContent = "Creating...";
-      try {
-        const res = await fetch(`${supabaseUrl}/auth/v1/signup`, {
-          method: "POST",
-          headers: {
-            apikey: supabaseAnon,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error_description || data.msg || "Sign up failed");
-        }
-        const token = data.access_token || data.session?.access_token || "";
-        if (token) {
-          localStorage.setItem(AUTH_TOKEN_KEY, token);
-          setStatus(`Account created and signed in as ${email}.`);
-        } else {
-          setStatus(`Account created for ${email}. Check email if confirmation is required, then sign in.`);
-        }
-      } catch (err) {
-        setStatus(`Error: ${err.message}`);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Sign Up";
-      }
-    }
-
     function signOut() {
       localStorage.removeItem(AUTH_TOKEN_KEY);
+      setAuthUI(false);
       setStatus("Signed out.");
     }
 
