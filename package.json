@@ -2,13 +2,14 @@
   "name": "youtube-script-analyser",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "description": "Rootward creator tools — script analyser and title/thumbnail lab",
   "scripts": {
     "dev": "node local-dev-server.js"
   },
-  "devDependencies": {
-    "dotenv": "^16.4.7",
+  "dependencies": {
     "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.7"
   }
 }

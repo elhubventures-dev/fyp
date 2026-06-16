@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/script-analyser", "destination": "/script-analyser.html" },
     { "source": "/title-thumbnail-tool", "destination": "/title-thumbnail-tool.html" }
   ]
