@@ -1,4 +1,6 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
   "rewrites": [
     { "source": "/script-analyser", "destination": "/script-analyser.html" },
     { "source": "/title-thumbnail-tool", "destination": "/title-thumbnail-tool.html" }
