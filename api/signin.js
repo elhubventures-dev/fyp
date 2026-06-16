@@ -27,8 +27,14 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     if (!response.ok) {
+      const detail = data?.error_description || data?.msg || data?.message || data?.error;
       return res.status(response.status).json({
-        error: data?.error_description || data?.msg || "Sign in failed"
+        error: detail ? `Sign in failed: ${detail}` : "Sign in failed.",
+        debug: {
+          status: response.status,
+          code: data?.code || "",
+          raw: data
+        }
       });
     }
 

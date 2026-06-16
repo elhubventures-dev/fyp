@@ -300,7 +300,9 @@
         });
         const data = await safeJson(res);
         if (!res.ok) {
-          throw new Error(data.error || "Sign in failed");
+          const detail = data.error || data.message || "Sign in failed";
+          const debugCode = data?.debug?.code ? ` (${data.debug.code})` : "";
+          throw new Error(`${detail}${debugCode}`);
         }
         const token = data.access_token || "";
         if (!token) throw new Error("No access token returned");
