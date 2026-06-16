@@ -17,6 +17,7 @@ export default async function handler(req, res) {
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const adminEmail = (process.env.ADMIN_EMAIL || "elhubv@gmail.com").toLowerCase();
   if (!supabaseUrl || !supabaseServiceRole) {
     return res.status(500).json({ error: "Supabase not configured" });
   }
@@ -28,7 +29,9 @@ export default async function handler(req, res) {
   try {
     const user = await getUserFromToken(supabaseUrl, supabaseServiceRole, token);
     if (!user) return res.status(401).json({ error: "Invalid token" });
-    return res.status(200).json({ user: { id: user.id, email: user.email || "" } });
+    const email = (user.email || "").toLowerCase();
+    const isAdmin = email === adminEmail;
+    return res.status(200).json({ user: { id: user.id, email: user.email || "", isAdmin } });
   } catch (error) {
     return res.status(500).json({ error: error.message || "Auth check failed" });
   }

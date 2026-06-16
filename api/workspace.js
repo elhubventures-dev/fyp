@@ -29,6 +29,7 @@ async function supabaseFetch(url, options) {
 export default async function handler(req, res) {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const adminEmail = (process.env.ADMIN_EMAIL || "elhubv@gmail.com").toLowerCase();
   if (!supabaseUrl || !supabaseKey) {
     return res.status(500).json({
       error: "Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
@@ -40,31 +41,28 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "tool is required" });
   }
 
-  let ownerId = req.query.workspaceId || req.body?.workspaceId || "";
+  let ownerId = "";
 
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  if (token) {
-    try {
-      const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-        method: "GET",
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${token}`
-        }
-      });
-      if (userResponse.ok) {
-        const user = await userResponse.json();
-        ownerId = user?.id || ownerId;
+  if (!token) return res.status(401).json({ error: "Authentication required." });
+  try {
+    const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      method: "GET",
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${token}`
       }
-    } catch {
-      // Fallback to workspaceId mode
-    }
+    });
+    if (!userResponse.ok) return res.status(401).json({ error: "Invalid session." });
+    const user = await userResponse.json();
+    const email = (user?.email || "").toLowerCase();
+    if (email !== adminEmail) return res.status(403).json({ error: "Access denied." });
+    ownerId = user?.id || "";
+  } catch (err) {
+    return res.status(500).json({ error: err.message || "Auth check failed." });
   }
-
-  if (!ownerId) {
-    return res.status(400).json({ error: "workspaceId is required when user is not authenticated" });
-  }
+  if (!ownerId) return res.status(401).json({ error: "Invalid session." });
 
   try {
     if (req.method === "GET") {

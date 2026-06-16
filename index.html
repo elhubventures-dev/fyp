@@ -95,12 +95,50 @@
       font-family: "DM Mono", monospace;
       font-size: 11px;
     }
+    .top-signout {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 10001;
+      display: none;
+      border: 1px solid var(--border);
+      background: #101010;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .top-signout:hover { border-color: var(--accent); color: var(--accent); }
     .auth {
       margin: 0 0 1rem;
       border: 1px solid var(--border);
       border-radius: 12px;
       background: #151515;
       padding: 0.9rem;
+    }
+    .auth-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.72);
+      display: grid;
+      place-items: center;
+      z-index: 9999;
+      padding: 1.25rem;
+    }
+    .auth-modal .auth {
+      width: min(860px, 100%);
+      margin: 0;
+      box-shadow: 0 20px 70px rgba(0,0,0,0.45);
+    }
+    .auth-title {
+      font-family: "DM Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.65rem;
     }
     .auth-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .auth input {
@@ -138,6 +176,7 @@
   </style>
 </head>
 <body>
+  <button id="topSignOut" class="top-signout" onclick="signOut()">Sign Out</button>
   <main class="wrap">
     <div class="badge">ROOTWARD TOOLSUITE</div>
     <h1>Pick Your <span>Creator Tool</span></h1>
@@ -145,7 +184,9 @@
       One live link, two tools. Analyze competitor scripts, generate better scripts,
       and build title/thumbnail strategy from one place.
     </p>
-    <section class="auth">
+    <section id="authGate" class="auth-modal">
+      <div class="auth">
+      <div class="auth-title">Admin Sign In Required</div>
       <div class="auth-row">
         <input id="emailInput" type="email" placeholder="Email" value="elhubv@gmail.com" />
         <input id="passwordInput" type="password" placeholder="Password" />
@@ -153,6 +194,7 @@
         <button id="signOutBtn" onclick="signOut()" style="display:none;">Sign Out</button>
       </div>
       <div class="auth-status" id="authStatus">Checking authentication...</div>
+      </div>
     </section>
     <section class="grid">
       <a class="card" href="/script-analyser.html">
@@ -182,10 +224,14 @@
       const signInBtn = document.getElementById("signInBtn");
       const emailInput = document.getElementById("emailInput");
       const passwordInput = document.getElementById("passwordInput");
+      const authGate = document.getElementById("authGate");
+      const topSignOut = document.getElementById("topSignOut");
       signOutBtn.style.display = isSignedIn ? "inline-block" : "none";
       signInBtn.style.display = isSignedIn ? "none" : "inline-block";
       passwordInput.style.display = isSignedIn ? "none" : "inline-block";
       emailInput.readOnly = isSignedIn;
+      authGate.style.display = isSignedIn ? "none" : "grid";
+      topSignOut.style.display = isSignedIn ? "inline-block" : "none";
     }
 
     async function loadConfig() {
@@ -215,6 +261,12 @@
         localStorage.removeItem(AUTH_TOKEN_KEY);
         setAuthUI(false);
         setStatus("Session expired. Sign in again.");
+        return;
+      }
+      if (!data.user?.isAdmin) {
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        setAuthUI(false);
+        setStatus("Access denied for this account.");
         return;
       }
       setAuthUI(true);
@@ -249,8 +301,16 @@
         const token = data.access_token || data.session?.access_token || "";
         if (!token) throw new Error("No access token returned");
         localStorage.setItem(AUTH_TOKEN_KEY, token);
+        const me = await fetch("/api/me", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const meData = await me.json();
+        if (!me.ok || !meData.user?.isAdmin) {
+          localStorage.removeItem(AUTH_TOKEN_KEY);
+          throw new Error("Access denied. Admin account only.");
+        }
         setAuthUI(true);
-        setStatus(`Signed in as ${email}. Cloud save active.`);
+        setStatus(`Signed in as ${meData.user.email}. Cloud save active.`);
       } catch (err) {
         setStatus(`Error: ${err.message}`);
       } finally {

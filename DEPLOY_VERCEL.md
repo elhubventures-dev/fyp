@@ -36,6 +36,7 @@ Redeploy after setting it.
    - `SUPABASE_URL`
    - `SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
+   - `ADMIN_EMAIL` (set to your email only)
 4. Redeploy.
 
 When enabled, both tools support cloud-backed **Save & Continue Later** across devices.
@@ -44,6 +45,7 @@ When enabled, both tools support cloud-backed **Save & Continue Later** across d
 
 - Open `/` and use the auth box.
 - Sign in with your existing Supabase email/password user.
+- Only `ADMIN_EMAIL` is allowed to access tools and APIs.
 - The access token is stored in browser localStorage and used by both tools for cloud save.
 
 ## 4) Test routes
