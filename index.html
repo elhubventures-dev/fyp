@@ -277,28 +277,22 @@
       const email = document.getElementById("emailInput").value.trim();
       const password = document.getElementById("passwordInput").value;
       if (!email || !password) return setStatus("Enter email and password.");
-      if (!(await loadConfig())) return;
       const btn = document.getElementById("signInBtn");
       btn.disabled = true;
       btn.textContent = "Signing in...";
       try {
-        const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+        const res = await fetch("/api/signin", {
           method: "POST",
           headers: {
-            apikey: supabaseAnon,
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({
-            email,
-            password
-          })
+          body: JSON.stringify({ email, password })
         });
-        if (!res.ok) {
-          const e = await res.json();
-          throw new Error(e.error_description || e.msg || "Sign in failed");
-        }
         const data = await res.json();
-        const token = data.access_token || data.session?.access_token || "";
+        if (!res.ok) {
+          throw new Error(data.error || "Sign in failed");
+        }
+        const token = data.access_token || "";
         if (!token) throw new Error("No access token returned");
         localStorage.setItem(AUTH_TOKEN_KEY, token);
         const me = await fetch("/api/me", {
