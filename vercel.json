@@ -1,3 +1,8 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/script-analyser", "destination": "/script-analyser.html" },
+    { "source": "/title-thumbnail-tool", "destination": "/title-thumbnail-tool.html" }
+  ]
 }
