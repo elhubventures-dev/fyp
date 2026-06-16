@@ -2,11 +2,12 @@
   "name": "youtube-script-analyser",
   "version": "1.0.0",
   "private": true,
-  "description": "Local server for script-analyser.html — analyse competitor scripts and generate superior ones",
+  "type": "module",
+  "description": "Rootward creator tools — script analyser and title/thumbnail lab",
   "scripts": {
-    "start": "node local-dev-server.js"
+    "dev": "node local-dev-server.js"
   },
-  "dependencies": {
+  "devDependencies": {
     "dotenv": "^16.4.7",
     "express": "^4.21.2"
   }
